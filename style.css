@@ -86,6 +86,7 @@ h1, h2 {
   line-height: 34px;
   color: #FFFFFF;
   max-width: 500px;
+  padding-right: 30px;
   font-weight: normal;
   margin-bottom: 15px;
 }
