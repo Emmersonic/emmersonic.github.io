@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@600&display=swap");
+
 html,
 body {
   height: 100%;
@@ -6,7 +8,7 @@ body {
 body {
   margin: 0;
   padding: 0;
-  background-color: #00d695;
+  background-color: #fbf9f4;
   cursor: crosshair;
 }
 
@@ -15,8 +17,11 @@ body {
   min-width: 100%;
 }
 
-body, h1, a, b {
-  font-family: 'colfax-web', 'Roboto', sans-serif;
+body,
+h1,
+a,
+b {
+  font-family: "Mara des Bois v0.2", "Roboto", sans-serif;
   font-weight: 400;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -32,7 +37,7 @@ footer {
 }
 
 header {
-  background: #101010;
+  background: #fffaf0;
   min-height: 350px;
   max-height: 75vh;
   height: 100vh;
@@ -40,7 +45,7 @@ header {
 }
 
 footer {
-  background: black;
+  background: #fffefc;
   min-height: 160px;
   max-height: 25vh;
   height: 100vh;
@@ -59,7 +64,7 @@ footer {
   width: 100%;
 }
 
-.column{
+.column {
   flex-direction: column;
 }
 
@@ -77,14 +82,15 @@ footer .contain {
 }
 
 footer .col {
-  color: #D4D4D4;
+  color: #2c2926;
   margin: 20px 0;
 }
 
-h1, h2 {
+h1,
+h2 {
   font-size: 24px;
   line-height: 34px;
-  color: #FFFFFF;
+  color: #1a1709;
   max-width: 500px;
   padding-right: 30px;
   font-weight: normal;
@@ -102,18 +108,20 @@ b {
 
 a {
   text-decoration: none;
-  color: #E5E5E5;
+  color: #2c2926;
   transition: color 0.4s ease;
 }
 
 a:hover,
-.links a:hover, .name {
-  color: #00d695;
+.links a:hover,
+.name {
+  color: #2c2926;
 }
 
-.links, .links a {
+.links,
+.links a {
   text-align: right;
-  color: white;
+  color: #2c2926;
 }
 
 @media (max-width: 700px) {
@@ -131,4 +139,43 @@ a:hover,
     line-height: 26px;
     color: white;
   }
+}
+
+.details {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  grid-template-rows: repeat(3, min-content);
+  gap: 16px 16px;
+  grid-template-areas: "titles content" "titles content" "titles content";
+}
+
+.titles {
+  font-family: "Poppins", "Roboto", sans-serif;
+  font-size: 8px;
+  text-transform: uppercase;
+}
+
+.titles h2,
+h3 {
+  font-family: "Poppins", "Roboto", sans-serif;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  opacity: 0.5;
+}
+
+.dated {
+  display: flex;
+  align-content: space-between;
+  justify-content: space-between;
+}
+
+.circle {
+  position: absolute;
+  width: 700px;
+  height: 700px;
+  border: 4px solid rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
+  left: 20%;
+  top: 20%;
 }
