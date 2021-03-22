@@ -29,12 +29,12 @@
 html,
 body {
   height: 100%;
+  background-color: #f5eee7;
 }
 
 body {
   margin: 0;
   padding: 0;
-  background-color: #5520ec;
   background: url("background.jpg") no-repeat center center;
   -webkit-background-size: cover;
   -moz-background-size: cover;
