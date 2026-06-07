@@ -1,0 +1,7 @@
+export { Hero } from './Hero'
+export { About } from './About'
+export { KnownFor } from './KnownFor'
+export { ToolsILove } from './ToolsILove'
+export { SitesILove } from './SitesILove'
+export { Sidebar } from './Sidebar'
+export { Footer } from './Footer'

@@ -49,12 +49,14 @@ export default {
         wide: 'var(--font-wide)',
       },
       fontSize: {
-        'display-xl': ['clamp(64px, 10vw, 140px)', { lineHeight: '0.95', letterSpacing: '-0.02em' }],
-        'display-l': ['clamp(32px, 5vw, 56px)', { lineHeight: '1.05', letterSpacing: '-0.01em' }],
-        kicker: ['13px', { lineHeight: '1.2', letterSpacing: '0.14em' }],
-        'body-l': ['clamp(20px, 2.4vw, 22px)', { lineHeight: '1.5' }],
-        body: ['17px', { lineHeight: '1.6' }],
-        label: ['14px', { lineHeight: '1.4' }],
+        // Real scale measured from the live site (New Spirit / Inter).
+        hero: ['clamp(34px, 5.6vw, 56px)', { lineHeight: '1.08', letterSpacing: '-0.01em' }],
+        hiya: ['28px', { lineHeight: '1.2' }],
+        lead: ['20px', { lineHeight: '30px' }],
+        serif: ['16px', { lineHeight: '26px' }],
+        kicker: ['12px', { lineHeight: '1', letterSpacing: '0.12em' }],
+        ui: ['14px', { lineHeight: '20px' }],
+        meta: ['12px', { lineHeight: '20px' }],
       },
       borderRadius: {
         card: 'var(--radius-card)',

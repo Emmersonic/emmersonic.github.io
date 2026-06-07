@@ -1,7 +1,7 @@
 import type { ElementType, ReactNode } from 'react'
 import { cn } from '@/lib/cn'
 
-export type TextVariant = 'display' | 'title' | 'kicker' | 'body-l' | 'body' | 'label'
+export type TextVariant = 'hero' | 'hiya' | 'lead' | 'serif' | 'kicker' | 'ui' | 'meta'
 
 interface TextProps {
   children: ReactNode
@@ -12,14 +12,18 @@ interface TextProps {
   className?: string
 }
 
-/** Variant → token classes. Color/weight can be overridden via `className`. */
+/**
+ * Variant → token classes, matching the live site's real roles. Color/weight
+ * can be overridden via `className` (e.g. white text on the dark/gold cards).
+ */
 const variantClasses: Record<TextVariant, string> = {
-  display: 'font-display text-display-xl font-semibold text-ink-strong',
-  title: 'font-display text-display-l font-semibold text-ink-strong',
-  kicker: 'font-wide font-stretch-wide text-kicker uppercase text-ink-muted',
-  'body-l': 'font-body text-body-l text-ink-muted',
-  body: 'font-body text-body text-ink-muted',
-  label: 'font-body text-label text-ink-muted',
+  hero: 'font-display text-hero font-normal text-ink-strong', // 56px serif hero statement
+  hiya: 'font-display text-hiya font-medium', // 28px serif greeting
+  lead: 'font-display text-lead font-normal text-ink-strong', // 20px serif lead / footer
+  serif: 'font-display text-serif font-normal text-ink-strong', // 16px serif body
+  kicker: 'font-wide font-stretch-wide text-kicker uppercase text-ink-muted', // tracked gray eyebrow
+  ui: 'font-body text-ui font-medium', // 14px Inter links/labels
+  meta: 'font-body text-meta text-ink-muted', // 12px Inter meta/desc
 }
 
 /**

@@ -1,25 +1,38 @@
-import { Reveal } from '@/motion/Reveal'
+import { PageShell } from '@/components/layout'
+import {
+  About,
+  Footer,
+  Hero,
+  KnownFor,
+  Sidebar,
+  SitesILove,
+  ToolsILove,
+} from '@/components/sections'
 
 /**
- * Foundation smoke test. Replaced by the real PageShell + sections in phase 6.
- * Verifies: warm-paper bg, Fraunces display, Inter body, Archivo wide kicker,
- * the type scale, token colors, and the Reveal motion wrapper.
+ * The single page, built as the live site's asymmetric collage: a blob hero
+ * band, then a two-column layout (left stack of cards overlapping the hero,
+ * right info sidebar), then a centered footer.
  */
 export default function App() {
   return (
-    <main className="min-h-screen bg-paper-0 text-ink">
-      <div className="mx-auto max-w-container px-6 py-32 desktop:px-10">
-        <Reveal>
-          <p className="font-wide font-stretch-wide text-kicker uppercase text-ink-muted">
-            Foundation check
-          </p>
-          <h1 className="mt-4 font-display text-display-xl font-semibold text-ink-strong">Hiya!</h1>
-          <p className="mt-6 max-w-xl font-body text-body-l text-ink-muted">
-            Warm paper background, Fraunces display serif, Inter body, Archivo wide kicker. If this
-            reads correctly, the design-token + motion foundation is wired up.
-          </p>
-        </Reveal>
+    <PageShell>
+      <div className="mx-auto w-full max-w-[1080px] px-5 py-6 tablet:px-8 tablet:py-10">
+        <Hero />
+
+        {/* Pull the columns up so the cards overlap the bottom of the hero blobs. */}
+        <main className="relative z-10 -mt-24 grid grid-cols-1 gap-8 tablet:-mt-40 desktop:grid-cols-[minmax(0,1fr)_300px] desktop:gap-12">
+          <div className="space-y-6 tablet:space-y-8">
+            <About />
+            <KnownFor />
+            <ToolsILove />
+            <SitesILove />
+          </div>
+          <Sidebar />
+        </main>
+
+        <Footer />
       </div>
-    </main>
+    </PageShell>
   )
 }

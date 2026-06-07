@@ -33,11 +33,11 @@ export const work: Company[] = [
     period: '2016 — 2026',
     location: 'New York, USA',
     roles: [
-      { title: 'Recruiting products', period: "'25 — '26" },
-      { title: 'Design tools', period: "'22 — '25" },
-      { title: 'Facebook groups', period: "'21 — '22" },
-      { title: 'Business design systems', period: "'18 — '21" },
-      { title: 'Business suite', period: "'16 — '18" },
+      { title: 'Recruiting Products', period: "'25 — '26" },
+      { title: 'Design Tools', period: "'22 — '25" },
+      { title: 'Facebook Groups', period: "'21 — '22" },
+      { title: 'Business Design Systems', period: "'18 — '21" },
+      { title: 'Business Suite', period: "'16 — '18" },
     ],
   },
   {

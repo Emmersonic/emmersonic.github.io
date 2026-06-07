@@ -40,3 +40,7 @@ lerna-debug.log*
 # Misc
 *.tsbuildinfo
 .eslintcache
+
+# Local reference captures (not shipped)
+emmersonic.html
+public/reference.html

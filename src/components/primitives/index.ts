@@ -1,7 +1,2 @@
-export { Text } from './Text'
-export type { TextVariant } from './Text'
+export { Text, type TextVariant } from './Text'
 export { AnimatedLink } from './AnimatedLink'
-export { Pill } from './Pill'
-export { GlassCard } from './GlassCard'
-export { GradientOrb } from './GradientOrb'
-export { BrandLogo } from './BrandLogo'

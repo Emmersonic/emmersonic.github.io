@@ -27,7 +27,7 @@ export function AnimatedLink({
       target="_blank"
       rel="noopener noreferrer"
       className={cn(
-        'text-ink transition-colors duration-fast ease-standard hover:text-accent',
+        'font-body text-ui font-medium text-accent transition-colors duration-fast ease-standard hover:text-accent-3',
         underline && 'group relative inline-flex',
         className
       )}
