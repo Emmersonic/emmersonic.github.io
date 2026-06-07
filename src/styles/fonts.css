@@ -1,0 +1,18 @@
+/* Self-hosted variable fonts via @fontsource (all OFL / free).
+   @import rules must precede other rules. */
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/fraunces';
+@import '@fontsource-variable/archivo/wdth.css';
+
+:root {
+  /* Body / UI — Inter. Exact match to the live site (OFL). */
+  --font-body: 'Inter Variable', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+
+  /* Display serif — live site uses New Spirit (commercial).
+     SUBSTITUTE: Fraunces Variable (OFL). Swap this one line when licensed. */
+  --font-display: 'Fraunces Variable', 'New Spirit', Georgia, 'Times New Roman', serif;
+
+  /* Wide grotesque kicker — live site uses Obviously Extended (commercial).
+     SUBSTITUTE: Archivo Variable at max width axis (OFL). Swap this one line when licensed. */
+  --font-wide: 'Archivo Variable', 'Obviously Extended', system-ui, sans-serif;
+}
