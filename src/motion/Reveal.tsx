@@ -1,32 +1,24 @@
 import { motion, useReducedMotion } from 'motion/react'
 import type { ElementType, ReactNode } from 'react'
-import { durations, easeStandard } from './motionConfig'
+import { springCard } from './motionConfig'
 
 interface RevealProps {
   children: ReactNode
-  /** Start offset in px. Sections use 50; larger blocks 70. */
+  /** Start offset in px. Cards use 50; hero text uses 70 (matches the live site). */
   y?: number
-  /** Delay for stagger (seconds). */
+  /** Cascade delay in seconds — how the staggered load sequence is built. */
   delay?: number
-  /** Animate only the first time it enters the viewport. */
-  once?: boolean
   /** Element to render (e.g. 'section', 'li'). Defaults to 'div'. */
   as?: ElementType
   className?: string
 }
 
 /**
- * The single scroll/load reveal wrapper. All entrance motion goes through here
- * so behavior is consistent and `prefers-reduced-motion` is handled in one place.
+ * The single entrance wrapper. Mirrors the live site's Framer "appear" model:
+ * everything animates once **on load** (not on scroll) as a staggered spring
+ * cascade. `prefers-reduced-motion` renders the element statically.
  */
-export function Reveal({
-  children,
-  y = 50,
-  delay = 0,
-  once = true,
-  as = 'div',
-  className,
-}: RevealProps) {
+export function Reveal({ children, y = 50, delay = 0, as = 'div', className }: RevealProps) {
   const reduced = useReducedMotion()
 
   if (reduced) {
@@ -40,10 +32,9 @@ export function Reveal({
   return (
     <MotionTag
       className={className}
-      initial={{ opacity: 0, y }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once, margin: '-10% 0px' }}
-      transition={{ duration: durations.reveal, ease: easeStandard, delay }}
+      initial={{ opacity: 0.001, y }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ ...springCard, delay }}
     >
       {children}
     </MotionTag>

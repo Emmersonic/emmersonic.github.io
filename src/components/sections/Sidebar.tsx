@@ -27,9 +27,8 @@ function Block({ label, children }: BlockProps) {
  */
 export function Sidebar() {
   return (
-    <Reveal>
-      <aside className="space-y-10">
-        <Reveal delay={0 * staggerStep}>
+    <aside className="space-y-10">
+        <Reveal delay={1.3 + 0 * staggerStep}>
           <Block label="Work">
             {work.map((c) => (
               <div key={c.company} className="mt-5 first:mt-0">
@@ -59,7 +58,7 @@ export function Sidebar() {
           </Block>
         </Reveal>
 
-        <Reveal delay={1 * staggerStep}>
+        <Reveal delay={1.3 + 1 * staggerStep}>
           <Block label="School">
             <AnimatedLink href={education.href}>{education.school}</AnimatedLink>
             <Text as="p" variant="meta" className="mt-0.5">
@@ -71,7 +70,7 @@ export function Sidebar() {
           </Block>
         </Reveal>
 
-        <Reveal delay={2 * staggerStep}>
+        <Reveal delay={1.3 + 2 * staggerStep}>
           <Block label="Email">
             <a
               href={'mailto:' + site.email}
@@ -82,7 +81,7 @@ export function Sidebar() {
           </Block>
         </Reveal>
 
-        <Reveal delay={3 * staggerStep}>
+        <Reveal delay={1.3 + 3 * staggerStep}>
           <Block label="Internet">
             <ul className="grid grid-cols-2 gap-x-6 gap-y-2">
               {socials.map((s) => (
@@ -94,7 +93,7 @@ export function Sidebar() {
           </Block>
         </Reveal>
 
-        <Reveal delay={4 * staggerStep}>
+        <Reveal delay={1.3 + 4 * staggerStep}>
           <Block label="Hiring?">
             <Text as="p" variant="meta" className="max-w-[40ch]">
               {hiring.body}
@@ -108,7 +107,6 @@ export function Sidebar() {
             </ul>
           </Block>
         </Reveal>
-      </aside>
-    </Reveal>
+    </aside>
   )
 }

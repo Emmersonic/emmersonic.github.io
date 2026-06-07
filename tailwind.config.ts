@@ -50,11 +50,14 @@ export default {
       },
       fontSize: {
         // Real scale measured from the live site (New Spirit / Inter).
-        hero: ['clamp(34px, 5.6vw, 56px)', { lineHeight: '1.08', letterSpacing: '-0.01em' }],
-        hiya: ['28px', { lineHeight: '1.2' }],
+        // Live: 56px / line-height 1.0em / no letter-spacing (white over blobs).
+        hero: ['clamp(34px, 5.6vw, 56px)', { lineHeight: '1' }],
+        // Live: New Spirit Medium 28px / line-height 1.4em.
+        hiya: ['28px', { lineHeight: '1.4' }],
         lead: ['20px', { lineHeight: '30px' }],
         serif: ['16px', { lineHeight: '26px' }],
-        kicker: ['12px', { lineHeight: '1', letterSpacing: '0.12em' }],
+        // Live: Inter 12px / line-height 24px / letter-spacing 1.2px (kickers + love-card labels).
+        kicker: ['12px', { lineHeight: '24px', letterSpacing: '1.2px' }],
         ui: ['14px', { lineHeight: '20px' }],
         meta: ['12px', { lineHeight: '20px' }],
       },

@@ -20,11 +20,11 @@ function renderRuns(runs: TextRun[]): ReactNode {
  * The light "About" card. The first paragraph reads as the serif lead; the
  * remaining two sit below as calmer 16px serif body. All dark ink on paper.
  */
-export function About() {
+export function About({ delay = 0 }: { delay?: number }) {
   const [lead, ...rest] = career
 
   return (
-    <Reveal>
+    <Reveal delay={delay}>
       <div className="rounded-card bg-paper-0 p-8 tablet:p-11">
         <Text as="p" variant="lead">
           {renderRuns(lead)}

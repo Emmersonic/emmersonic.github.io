@@ -21,7 +21,7 @@ const variantClasses: Record<TextVariant, string> = {
   hiya: 'font-display text-hiya font-medium', // 28px serif greeting
   lead: 'font-display text-lead font-normal text-ink-strong', // 20px serif lead / footer
   serif: 'font-display text-serif font-normal text-ink-strong', // 16px serif body
-  kicker: 'font-wide font-stretch-wide text-kicker uppercase text-ink-muted', // tracked gray eyebrow
+  kicker: 'font-body text-kicker uppercase text-ink-muted', // Inter 12 / lh24 / +1.2px tracked gray eyebrow
   ui: 'font-body text-ui font-medium', // 14px Inter links/labels
   meta: 'font-body text-meta text-ink-muted', // 12px Inter meta/desc
 }

@@ -1,3 +1,5 @@
+import { TopBlur } from './TopBlur'
+
 interface PageShellProps {
   children: React.ReactNode
 }
@@ -8,5 +10,10 @@ interface PageShellProps {
  * against any bleed introducing horizontal scroll.
  */
 export function PageShell({ children }: PageShellProps) {
-  return <div className="min-h-screen overflow-x-clip bg-paper-1 text-ink">{children}</div>
+  return (
+    <div className="min-h-screen overflow-x-clip bg-paper-1 text-ink">
+      {children}
+      <TopBlur />
+    </div>
+  )
 }
