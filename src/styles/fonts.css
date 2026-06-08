@@ -3,6 +3,7 @@
 @import '@fontsource-variable/inter';
 @import '@fontsource-variable/fraunces';
 @import '@fontsource-variable/archivo/wdth.css';
+@import '@fontsource-variable/jetbrains-mono';
 
 /* Self-hosted New Spirit (Newlyn, commercial — licensed).
    Exact display serif from the live emmersonic.com. */
@@ -30,17 +31,6 @@
     url('../assets/fonts/NewSpirit-Medium.woff2') format('woff2'),
     url('/fonts/NewSpirit-Medium.otf') format('opentype');
   font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-}
-/* Regular-only family — used explicitly for the About emphasis so its weight
-   (600) synthesizes off the Regular cut, not the heavier SemiBold/Bold faces. */
-@font-face {
-  font-family: 'New Spirit Regular';
-  src:
-    url('../assets/fonts/NewSpirit-Regular.woff2') format('woff2'),
-    url('/fonts/NewSpirit-Regular.otf') format('opentype');
-  font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
@@ -83,4 +73,8 @@
   /* Wide grotesque kicker — live site uses Obviously Extended (commercial).
      SUBSTITUTE: Archivo Variable at max width axis (OFL). Swap this one line when licensed. */
   --font-wide: 'Archivo Variable', 'Obviously Extended', system-ui, sans-serif;
+
+  /* Monospace — JetBrains Mono. Used for the circular ring labels: equal glyph
+     advance = even visual tracking around the ring (OFL). */
+  --font-mono: 'JetBrains Mono Variable', ui-monospace, SFMono-Regular, Menlo, monospace;
 }

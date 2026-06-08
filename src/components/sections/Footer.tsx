@@ -1,6 +1,7 @@
 import { Text } from '@/components/primitives'
 import { Reveal } from '@/motion/Reveal'
 import { footer } from '@/content'
+import shapes from '@/assets/logos/shapes.svg'
 
 /**
  * The closing note: a single centered serif line with a final `mailto:` CTA.
@@ -19,6 +20,14 @@ export function Footer({ delay = 0 }: { delay?: number }) {
             {footer.email}
           </a>
         </Text>
+      </Reveal>
+      <Reveal delay={delay + 0.15}>
+        <img
+          src={shapes}
+          alt=""
+          aria-hidden="true"
+          className="mx-auto mt-10 w-20"
+        />
       </Reveal>
     </footer>
   )

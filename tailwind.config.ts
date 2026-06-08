@@ -47,19 +47,20 @@ export default {
         display: 'var(--font-display)',
         body: 'var(--font-body)',
         wide: 'var(--font-wide)',
+        mono: 'var(--font-mono)',
       },
       fontSize: {
         // Real scale measured from the live site (New Spirit / Inter).
         // Live: 56px / line-height 1.0em / no letter-spacing (white over blobs).
         hero: ['clamp(34px, 5.6vw, 56px)', { lineHeight: '1' }],
         // Live: New Spirit Medium 28px / line-height 1.4em.
-        hiya: ['28px', { lineHeight: '1.4' }],
-        lead: ['20px', { lineHeight: '30px' }],
-        serif: ['16px', { lineHeight: '26px' }],
+        hiya: ['30px', { lineHeight: '1.4' }],
+        lead: ['22px', { lineHeight: '1.5' }],
+        serif: ['18px', { lineHeight: '1.6' }],
         // Live: Inter 12px / line-height 24px / letter-spacing 1.2px (kickers + love-card labels).
-        kicker: ['12px', { lineHeight: '24px', letterSpacing: '1.2px' }],
-        ui: ['14px', { lineHeight: '20px', letterSpacing: '0.1px' }],
-        meta: ['12px', { lineHeight: '20px' }],
+        kicker: ['14px', { lineHeight: '2', letterSpacing: '1.2px' }],
+        ui: ['16px', { lineHeight: '1.4', letterSpacing: '0.1px' }],
+        meta: ['14px', { lineHeight: '1.6' }],
       },
       borderRadius: {
         card: 'var(--radius-card)',

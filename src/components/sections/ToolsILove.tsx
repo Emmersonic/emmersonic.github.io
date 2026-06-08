@@ -6,7 +6,7 @@ import { tools } from '@/content'
 export function ToolsILove({ delay = 0 }: { delay?: number }) {
   return (
     <Reveal delay={delay}>
-      <LoveCard label="Tools I love" items={tools} />
+      <LoveCard label="Tools I love" items={tools} labelVariant="circular" />
     </Reveal>
   )
 }
