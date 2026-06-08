@@ -44,3 +44,7 @@ lerna-debug.log*
 # Local reference captures (not shipped)
 emmersonic.html
 public/reference.html
+
+# Commercial fonts (Newlyn / New Spirit — licensed, do not commit)
+public/fonts/
+src/assets/fonts/

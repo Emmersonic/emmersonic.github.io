@@ -16,7 +16,7 @@ function Block({ label, children }: BlockProps) {
       <Text variant="kicker" as="h2">
         {label}
       </Text>
-      <div className="mt-3">{children}</div>
+      <div className="mt-1">{children}</div>
     </div>
   )
 }
@@ -27,44 +27,46 @@ function Block({ label, children }: BlockProps) {
  */
 export function Sidebar() {
   return (
-    <aside className="space-y-10">
+    <aside className="space-y-10 pr-12 desktop:pt-[122px]">
         <Reveal delay={1.3 + 0 * staggerStep}>
           <Block label="Work">
-            {work.map((c) => (
-              <div key={c.company} className="mt-5 first:mt-0">
-                <AnimatedLink href={c.href}>{c.company}</AnimatedLink>
-                <Text as="p" variant="meta" className="mt-0.5">
-                  {c.period} · {c.location}
-                </Text>
-                {c.roles.length > 0 && (
-                  <ul className="mt-2 space-y-1">
-                    {c.roles.map((role) => (
-                      <li
-                        key={role.title}
-                        className="flex items-baseline justify-between gap-3"
-                      >
-                        <Text as="span" variant="meta" className="text-ink">
-                          {role.title}
-                        </Text>
-                        <Text as="span" variant="meta" className="shrink-0 tabular-nums">
-                          {role.period}
-                        </Text>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            ))}
+            <div className="space-y-2">
+              {work.map((c) => (
+                <div key={c.company}>
+                  <AnimatedLink href={c.href}>{c.company}</AnimatedLink>
+                  <Text as="p" variant="meta" className="mt-0.5">
+                    {c.period} · {c.location}
+                  </Text>
+                  {c.roles.length > 0 && (
+                    <ul className="mt-1 space-y-1 pl-2">
+                      {c.roles.map((role) => (
+                        <li
+                          key={role.title}
+                          className="flex items-baseline gap-2 whitespace-nowrap"
+                        >
+                          <Text as="span" variant="meta" className="text-ink">
+                            {role.title}
+                          </Text>
+                          <Text as="span" variant="meta">
+                            {role.period}
+                          </Text>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              ))}
+            </div>
           </Block>
         </Reveal>
 
         <Reveal delay={1.3 + 1 * staggerStep}>
           <Block label="School">
             <AnimatedLink href={education.href}>{education.school}</AnimatedLink>
-            <Text as="p" variant="meta" className="mt-0.5">
+            <Text as="p" variant="meta" className="mt-[5px]">
               {education.period}
             </Text>
-            <Text as="p" variant="meta">
+            <Text as="p" variant="meta" className="mt-[5px]">
               {education.degree} · {education.location}
             </Text>
           </Block>
@@ -83,7 +85,7 @@ export function Sidebar() {
 
         <Reveal delay={1.3 + 3 * staggerStep}>
           <Block label="Internet">
-            <ul className="grid grid-cols-2 gap-x-6 gap-y-2">
+            <ul className="grid grid-cols-2 gap-2">
               {socials.map((s) => (
                 <li key={s.name}>
                   <AnimatedLink href={s.href}>{s.name}</AnimatedLink>
@@ -95,10 +97,10 @@ export function Sidebar() {
 
         <Reveal delay={1.3 + 4 * staggerStep}>
           <Block label="Hiring?">
-            <Text as="p" variant="meta" className="max-w-[40ch]">
+            <Text as="p" variant="meta">
               {hiring.body}
             </Text>
-            <ul className="mt-3 space-y-1">
+            <ul className="mt-2 space-y-2">
               {hiring.links.map((l) => (
                 <li key={l.name}>
                   <AnimatedLink href={l.href}>{l.name}</AnimatedLink>

@@ -58,7 +58,7 @@ export default {
         serif: ['16px', { lineHeight: '26px' }],
         // Live: Inter 12px / line-height 24px / letter-spacing 1.2px (kickers + love-card labels).
         kicker: ['12px', { lineHeight: '24px', letterSpacing: '1.2px' }],
-        ui: ['14px', { lineHeight: '20px' }],
+        ui: ['14px', { lineHeight: '20px', letterSpacing: '0.1px' }],
         meta: ['12px', { lineHeight: '20px' }],
       },
       borderRadius: {

@@ -7,7 +7,7 @@ import { career, type TextRun } from '@/content'
 function renderRuns(runs: TextRun[]): ReactNode {
   return runs.map((run, i) =>
     run.bold ? (
-      <strong key={i} className="font-semibold text-ink-strong">
+      <strong key={i} className="font-medium text-ink-strong" style={{ textRendering: 'auto' }}>
         {run.text}
       </strong>
     ) : (

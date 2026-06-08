@@ -13,12 +13,16 @@ This supersedes IMPLEMENTATION.md's invented type scale where they disagree. **R
 - **Footer:** centered serif line.
 - Mobile (<810): single column — cards full width, sidebar lists stack below.
 
-## Hero
-- Blobs (large, solid swatch colors, big squircle radii, heavily blurred 7–30px via wrapper), overlapping left-center:
-  - green `#4af78a` ~709px (radius 161)
-  - red `#f74a4a` ~456px (radius 91)
-  - blue gradient `radial-gradient(65.8% 78.7% at 25.5% 21.5%, #38c0ff, #0f8bff)` (radius 241)
-  - yellow `#fff04d`
+## Hero (desktop ≥1200 geometry, measured)
+- Panel (`Clip`) is **full-bleed at top: top:0**, 1360 wide (40px from viewport at 1440), height **680**, bottom-only radius 48px, warm field `#eee6dd`. No top page-padding above it.
+- Text column 1020 centered, padding **280 / 48 / 90**. → Hiya top **280**, headline (3×56px) **329→497**, column bottom **589**.
+- First card (About) top **597** — clears the headline by ~100px and overlaps the panel bottom by ~83px (the card pulls up over the blob field). Don't over-pull the column up or it crowds the headline.
+- Background stack (bottom→top): `#eee6dd` → Highlight gold radial → **two** Lowlights (peach, lower-right AND lower-left) → **Noise grain** (`Hq35x5…png`, near-black speckle @ ~40% alpha, `mix-blend:overlay; opacity:.16`) → blobs → **over-shape grain**: "Gradient" film grain (`uxNRuj…png`, mid-grey mean ~113) at `multiply .04`, then a 2nd "Noise" (`Hq35x5…png`) at `overlay .15`. The `multiply .04` is what tints the header slightly darker. (Only these two passes over the shapes — no `overlay .74`; that opacity in the DOM belongs to an unrelated element.) Both PNGs committed to `public/images/` (no runtime network dep); the old inline feTurbulence couldn't darken — `fractalNoise` is symmetric about mid-grey = overlay-neutral.
+- Blobs (solid swatch colors, big squircle radii, heavily blurred via wrapper), overlapping left-center:
+  - green `#4af78a` 541px (radius 161), blur 12, at top300/left360
+  - red `#f74a4a` 404px (radius 91), blur 12, at top190/left80
+  - blue gradient `radial-gradient(65.8% 78.7% at 25.5% 21.5%, #38c0ff, #0f8bff)` 326px circle, blur ≈37 (wrapper 22 ⊕ own 30), at top42/left400
+  - yellow `#fff04d` — a **rounded triangle** (apex up), its own 546×469 SVG, blur 7, at top-78/left-31. NOT a squircle.
 - "Hiya!" — New Spirit **Medium 28px**, color `rgba(18,18,18,.74)`.
 - "I'm Taylor, a product designer and systems thinker — currently making at Homebase in Toronto" —
   New Spirit **Regular 56px**, **white**, over the blobs. (responsive: clamp down on mobile)

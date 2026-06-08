@@ -4,13 +4,81 @@
 @import '@fontsource-variable/fraunces';
 @import '@fontsource-variable/archivo/wdth.css';
 
+/* Self-hosted New Spirit (Newlyn, commercial — licensed).
+   Exact display serif from the live emmersonic.com. */
+@font-face {
+  font-family: 'New Spirit';
+  src:
+    url('../assets/fonts/NewSpirit-Light.woff2') format('woff2'),
+    url('/fonts/NewSpirit-Light.otf') format('opentype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'New Spirit';
+  src:
+    url('../assets/fonts/NewSpirit-Regular.woff2') format('woff2'),
+    url('/fonts/NewSpirit-Regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'New Spirit';
+  src:
+    url('../assets/fonts/NewSpirit-Medium.woff2') format('woff2'),
+    url('/fonts/NewSpirit-Medium.otf') format('opentype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+/* Regular-only family — used explicitly for the About emphasis so its weight
+   (600) synthesizes off the Regular cut, not the heavier SemiBold/Bold faces. */
+@font-face {
+  font-family: 'New Spirit Regular';
+  src:
+    url('../assets/fonts/NewSpirit-Regular.woff2') format('woff2'),
+    url('/fonts/NewSpirit-Regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'New Spirit';
+  src:
+    url('../assets/fonts/NewSpirit-SemiBold.woff2') format('woff2'),
+    url('/fonts/NewSpirit-SemiBold.otf') format('opentype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'New Spirit';
+  src:
+    url('../assets/fonts/NewSpirit-Bold.woff2') format('woff2'),
+    url('/fonts/NewSpirit-Bold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'New Spirit';
+  src:
+    url('../assets/fonts/NewSpirit-Heavy.woff2') format('woff2'),
+    url('/fonts/NewSpirit-Heavy.otf') format('opentype');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   /* Body / UI — Inter. Exact match to the live site (OFL). */
   --font-body: 'Inter Variable', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 
-  /* Display serif — live site uses New Spirit (commercial).
-     SUBSTITUTE: Fraunces Variable (OFL). Swap this one line when licensed. */
-  --font-display: 'Fraunces Variable', 'New Spirit', Georgia, 'Times New Roman', serif;
+  /* Display serif — live site uses New Spirit (Newlyn, commercial — now licensed
+     and self-hosted above). Fraunces Variable kept as a graceful fallback. */
+  --font-display: 'New Spirit', 'Fraunces Variable', Georgia, 'Times New Roman', serif;
 
   /* Wide grotesque kicker — live site uses Obviously Extended (commercial).
      SUBSTITUTE: Archivo Variable at max width axis (OFL). Swap this one line when licensed. */

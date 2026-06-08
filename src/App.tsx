@@ -17,13 +17,17 @@ import {
 export default function App() {
   return (
     <PageShell>
-      {/* Outer frame ~1360 wide (live: 1400 page frame, 20px Header padding). */}
-      <div className="mx-auto w-full max-w-[1400px] px-5 py-6 tablet:py-10">
+      {/* Outer frame ~1360 wide (live: 1400 page frame, 20px Header padding).
+          No top padding — the hero panel meets the viewport top (top:0) as on
+          the live site; only the sides and bottom are inset. */}
+      <div className="mx-auto w-full max-w-[1400px] px-5 pb-6 tablet:pb-10">
         {/* Hero spans the full frame; its headline/cards live in a narrower column. */}
         <Hero />
 
-        {/* Centered 1020 column, pulled up to overlap the bottom of the hero panel. */}
-        <main className="relative z-10 mx-auto max-w-[1020px] -mt-24 grid grid-cols-1 gap-8 tablet:-mt-40 desktop:grid-cols-[minmax(0,1fr)_260px] desktop:gap-[60px]">
+        {/* Centered 1020 column, pulled up to overlap the bottom of the hero panel.
+            Desktop overlap is tuned so the first card clears the headline by the
+            live site's ~100px (card top ≈ 597 against a 680-tall panel). */}
+        <main className="relative z-10 mx-auto max-w-[1020px] -mt-24 grid grid-cols-1 gap-8 tablet:-mt-40 desktop:-mt-[83px] desktop:grid-cols-[minmax(0,1fr)_260px] desktop:gap-[60px]">
           <div className="space-y-6 tablet:space-y-8">
             <About delay={1.0} />
             <KnownFor delay={1.25} />
