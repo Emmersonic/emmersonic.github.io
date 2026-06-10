@@ -1,5 +1,6 @@
-import { motion, useScroll, useTransform } from 'framer-motion'
+import { motion, useScroll, useTransform } from 'motion/react'
 import { PageShell } from '@/components/layout'
+import { revealAt } from '@/motion/motionConfig'
 import {
   About,
   Footer,
@@ -38,14 +39,14 @@ export default function App() {
             live site's ~100px (card top ≈ 597 against a 680-tall panel). */}
         <main className="relative mx-auto max-w-[1100px] -mt-24 grid grid-cols-1 gap-8 tablet:-mt-40 desktop:-mt-[83px] desktop:grid-cols-[minmax(0,1fr)_340px] desktop:gap-[60px]">
           <div className="relative z-20 space-y-6 tablet:space-y-8">
-            <About delay={1.0} />
-            <KnownFor delay={1.25} />
+            <About delay={revealAt.about} />
+            <KnownFor delay={revealAt.knownFor} />
             {/* Tools (gold) + Sites (blue) sit side by side, as on the live site. */}
             <div className="grid grid-cols-1 gap-6">
-              <ToolsILove delay={1.45} />
-              <SitesILove delay={1.6} />
+              <ToolsILove delay={revealAt.tools} />
+              <SitesILove delay={revealAt.sites} />
             </div>
-            <Footer delay={1.75} />
+            <Footer delay={revealAt.footer} />
           </div>
           <motion.div style={{ y: sidebarY }}>
             <Sidebar />

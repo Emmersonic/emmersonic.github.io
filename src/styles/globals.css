@@ -17,7 +17,7 @@
     font-synthesis: none;
   }
 
-  /* Fraunces / variable serif looks best with optical sizing on */
+  /* Variable serif fallbacks look best with optical sizing on */
   .font-display {
     font-optical-sizing: auto;
   }
@@ -35,12 +35,6 @@
   }
 }
 
-@layer utilities {
-  /* Drives the Archivo width axis for the wide grotesque kicker look */
-  .font-stretch-wide {
-    font-stretch: 125%;
-  }
-}
 
 @media (prefers-reduced-motion: reduce) {
   html {

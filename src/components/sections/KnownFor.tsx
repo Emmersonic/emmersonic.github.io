@@ -1,4 +1,4 @@
-import { Text } from '@/components/primitives'
+import { Card, Text } from '@/components/primitives'
 import { Reveal } from '@/motion/Reveal'
 import { traits } from '@/content'
 
@@ -10,7 +10,7 @@ import { traits } from '@/content'
 export function KnownFor({ delay = 0 }: { delay?: number }) {
   return (
     <Reveal delay={delay}>
-      <div className="rounded-card bg-paper-2 p-8 tablet:p-11">
+      <Card tone="warm">
         <Text as="h2" variant="serif" className="font-medium text-ink-strong">
           I’m also known for being…
         </Text>
@@ -26,7 +26,7 @@ export function KnownFor({ delay = 0 }: { delay?: number }) {
             </li>
           ))}
         </ul>
-      </div>
+      </Card>
     </Reveal>
   )
 }

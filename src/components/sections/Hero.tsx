@@ -8,13 +8,26 @@ import {
   useTransform,
   type MotionValue,
 } from 'motion/react'
-import { useCallback, useEffect, useRef, useState, type RefObject } from 'react'
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type RefObject,
+} from 'react'
 import { createNoise2D } from 'simplex-noise'
 import { Text } from '@/components/primitives'
 import { Reveal } from '@/motion/Reveal'
 import { springHero } from '@/motion/motionConfig'
 import { site } from '@/content'
-import ShapeBlur from './ShapeBlur'
+
+// Lazy: ShapeBlur pulls in three.js (~600 kB min). Splitting it into an async
+// chunk keeps the initial bundle lean; the shapes appear when the chunk lands
+// (they fade up behind a heavy blur, so the late arrival isn't jarring).
+const ShapeBlur = lazy(() => import('./ShapeBlur'))
 
 /**
  * Continuous ambient "float" for the hero blobs. Each shape wanders along its
@@ -44,7 +57,9 @@ const SCROLL_IDLE_MS = 90 // grace after the last scroll event before float resu
  */
 function usePageActive() {
   const [active, setActive] = useState(() =>
-    typeof document === 'undefined' ? true : document.visibilityState === 'visible' && document.hasFocus(),
+    typeof document === 'undefined'
+      ? true
+      : document.visibilityState === 'visible' && document.hasFocus()
   )
   useEffect(() => {
     const update = () => setActive(document.visibilityState === 'visible' && document.hasFocus())
@@ -61,7 +76,13 @@ function usePageActive() {
   return active
 }
 
-function useFloat(seed: number, reduced: boolean, scrollAt: RefObject<number>, inView: boolean, enabled: boolean) {
+function useFloat(
+  seed: number,
+  reduced: boolean,
+  scrollAt: RefObject<number>,
+  inView: boolean,
+  enabled: boolean
+) {
   const x = useMotionValue(0)
   const y = useMotionValue(0)
   const rot = useMotionValue(0)
@@ -120,13 +141,23 @@ function useFloat(seed: number, reduced: boolean, scrollAt: RefObject<number>, i
  * - `FLOAT`: ambient simplex-noise wander on the shapes ({@link useFloat}).
  * - `HOVER_BLUR`: pointer-reveal bloom in the WebGL ShapeBlur canvases. Only has
  *   an effect when `SHAPE_BLUR` is on.
+ * - `AUTO_BLUR`: auto-orbit reveal — a virtual cursor sweeps the left shapes so
+ *   the bloom plays without a pointer. Only meaningful when `SHAPE_BLUR` is on.
  * - `GRAIN`: composite the over-shape film grain *inside* the ShapeBlur shader
  *   (hash noise added per-pixel) instead of via the two CSS `mix-blend` grain
  *   divs. Drops the per-frame backdrop re-raster those blends force while the
  *   shapes move. Only meaningful with `SHAPE_BLUR` on (grain rides the canvases);
  *   when on, the two over-shape CSS grain layers are not rendered.
  */
-const DEFAULT_MODES = { SHAPE_BLUR: true, CLIP_TILT: true, CLIP_INSET: 9, FLOAT: true, HOVER_BLUR: false, AUTO_BLUR: true, GRAIN: true }
+const DEFAULT_MODES = {
+  SHAPE_BLUR: true,
+  CLIP_TILT: true,
+  CLIP_INSET: 9,
+  FLOAT: true,
+  HOVER_BLUR: false,
+  AUTO_BLUR: true,
+  GRAIN: true,
+}
 // In-shader grain tuning (GRAIN mode): additive hash noise. Intensity ≈ the old
 // CSS multiply .04 + overlay .15 pair; scale 1 = ~per-CSS-px cells (fine film).
 const SHADER_GRAIN_AMOUNT = 0.09
@@ -135,9 +166,11 @@ const MODES_STORAGE_KEY = 'hero-modes'
 
 type HeroModes = typeof DEFAULT_MODES
 
-/** Read persisted dev-panel overrides, falling back to {@link DEFAULT_MODES}. */
+/** Read persisted dev-panel overrides, falling back to {@link DEFAULT_MODES}.
+ *  Dev builds only — prod must never pick up stale experiments from
+ *  localStorage left by a dev session on the same origin. */
 function loadModes(): HeroModes {
-  if (typeof window === 'undefined') return DEFAULT_MODES
+  if (!import.meta.env.DEV || typeof window === 'undefined') return DEFAULT_MODES
   try {
     const raw = window.localStorage.getItem(MODES_STORAGE_KEY)
     return raw ? { ...DEFAULT_MODES, ...JSON.parse(raw) } : DEFAULT_MODES
@@ -220,7 +253,8 @@ interface Shape {
   left: number
   /** Scroll-parallax drift in px over the hero's scroll range (depth cue). */
   drift: number
-  /** ShapeBlur experiment: tint + SDF variation (0 rounded-rect, 1 circle). */
+  /** ShapeBlur tint — any CSS color, including `var(--token)` references
+   *  (resolved against the mount element at context creation). */
   color: string
   /** Optional second tint for a gradient fill (defaults to flat `color`). */
   color2?: string
@@ -248,12 +282,64 @@ interface Shape {
 const shapes: Shape[] = [
   // Blue circle: no scale on the live site; blur is the wrapper's 22px stacked
   // over the circle's own 30px (≈37px combined, √(22²+30²)).
-  { bg: 'bg-orb-blue', size: 326, radius: 'rounded-full', rotate: 0, blur: 37, top: 42, left: 400, drift: 50, color: '#38c0ff', color2: '#0f8bff', variation: 1, shapeSize: 0.5, pad: 0.75, baseBlur: 0.15 },
-  { bg: 'bg-swatch-green', size: 541, radius: 'rounded-[161px]', rotate: 67, blur: 12, top: 300, left: 360, drift: 80, color: '#5bff97', color2: '#22d36e', variation: 4 },
-  { bg: 'bg-swatch-red', size: 404, radius: 'rounded-[91px]', rotate: 8, blur: 12, top: 250, left: 80, drift: 130, color: '#fd6d6d', color2: '#f53a3a', variation: 4 },
+  {
+    bg: 'bg-orb-blue',
+    size: 326,
+    radius: 'rounded-full',
+    rotate: 0,
+    blur: 37,
+    top: 42,
+    left: 400,
+    drift: 50,
+    color: 'var(--shape-blue-1)',
+    color2: 'var(--shape-blue-2)',
+    variation: 1,
+    shapeSize: 0.5,
+    pad: 0.75,
+    baseBlur: 0.15,
+  },
+  {
+    bg: 'bg-swatch-green',
+    size: 541,
+    radius: 'rounded-[161px]',
+    rotate: 67,
+    blur: 12,
+    top: 300,
+    left: 360,
+    drift: 80,
+    color: 'var(--shape-green-1)',
+    color2: 'var(--shape-green-2)',
+    variation: 4,
+  },
+  {
+    bg: 'bg-swatch-red',
+    size: 404,
+    radius: 'rounded-[91px]',
+    rotate: 8,
+    blur: 12,
+    top: 250,
+    left: 80,
+    drift: 130,
+    color: 'var(--shape-red-1)',
+    color2: 'var(--shape-red-2)',
+    variation: 4,
+  },
   // Yellow "splat": filled triangle (var 3), top-left, on top — matches the
   // live site's yellow rounded-triangle in the blur experiment.
-  { bg: 'bg-swatch-yellow', size: 520, radius: '', rotate: 0, blur: 7, top: -100, left: -40, drift: 170, color: '#fff7a0', color2: '#ffe34d', variation: 5, baseBlur: 0.08 },
+  {
+    bg: 'bg-swatch-yellow',
+    size: 520,
+    radius: '',
+    rotate: 0,
+    blur: 7,
+    top: -100,
+    left: -40,
+    drift: 170,
+    color: 'var(--shape-yellow-1)',
+    color2: 'var(--shape-yellow-2)',
+    variation: 5,
+    baseBlur: 0.08,
+  },
 ]
 
 /**
@@ -264,16 +350,24 @@ const shapes: Shape[] = [
  * netted ~zero luminance change. These PNGs have a dark-biased mean, so the
  * overlay/multiply passes tint the header slightly darker like the original.
  */
-const NOISE_PNG = '/images/noise.png' // fine "Noise" layer (Hq35x5…)
-const GRAIN_PNG = '/images/grain.png' // smooth film "Gradient" layer (uxNRuj…)
+const NOISE_IMG = '/images/noise.webp' // fine "Noise" layer (Hq35x5…)
+const GRAIN_IMG = '/images/grain.webp' // smooth film "Gradient" layer (uxNRuj…)
 
 /** One full-bleed image-grain pass (`mix-blend` + opacity), matching a Framer layer. */
-function Grain({ src, blend, opacity }: { src: string; blend: string; opacity: number }) {
+function Grain({
+  src,
+  blend,
+  opacity,
+}: {
+  src: string
+  blend: CSSProperties['mixBlendMode']
+  opacity: number
+}) {
   return (
     <div
       aria-hidden
       className="pointer-events-none absolute inset-0 bg-cover bg-center"
-      style={{ backgroundImage: `url(${src})`, mixBlendMode: blend as never, opacity }}
+      style={{ backgroundImage: `url(${src})`, mixBlendMode: blend, opacity }}
     />
   )
 }
@@ -283,10 +377,16 @@ const YELLOW_BASE = { top: -78, left: -31, filter: 'blur(7px)' as const }
 const yellowPath = (
   <path
     d="M 232.092 70.325 C 250.297 38.978 295.57 38.978 313.774 70.325 L 504.101 398.053 C 522.386 429.539 499.67 469 463.26 469 L 82.607 469 C 46.197 469 23.481 429.539 41.766 398.053 Z"
-    fill="#fff04d"
+    style={{ fill: 'var(--swatch-yellow)' }}
   />
 )
-const yellowSvgProps = { className: 'absolute', width: 551, height: 469, viewBox: '0 0 546 469', 'aria-hidden': true }
+const yellowSvgProps = {
+  className: 'absolute',
+  width: 551,
+  height: 469,
+  viewBox: '0 0 546 469',
+  'aria-hidden': true,
+}
 
 /**
  * The yellow "splat": on the live site a 551×469 rounded-triangle SVG, heavily
@@ -295,7 +395,13 @@ const yellowSvgProps = { className: 'absolute', width: 551, height: 469, viewBox
  * Same color as the swatch (`hsl(55,100%,65%)` ≈ #fff04d). Drifts with scroll
  * like the other shapes.
  */
-function YellowTriangle({ progress, reduced }: { progress: MotionValue<number>; reduced: boolean }) {
+function YellowTriangle({
+  progress,
+  reduced,
+}: {
+  progress: MotionValue<number>
+  reduced: boolean
+}) {
   const y = useTransform(progress, [0, 1], [0, 170])
   if (reduced)
     return (
@@ -333,8 +439,14 @@ interface ShapeProps {
   paused: boolean
 }
 
+/** The position/size/drift/float props shared by both shape variants. */
+type BaseShapeProps = Pick<
+  ShapeProps,
+  'shape' | 'progress' | 'reduced' | 'scrollAt' | 'inView' | 'float'
+>
+
 /** A single blurred shape; scroll-parallax drift + ambient noise float. */
-function HeroShape({ shape, progress, reduced, scrollAt, inView, float }: ShapeProps) {
+function HeroShape({ shape, progress, reduced, scrollAt, inView, float }: BaseShapeProps) {
   const yDrift = useTransform(progress, [0, 1], [0, shape.drift])
   const { x, y: fy, rot } = useFloat(floatSeed(shape), reduced, scrollAt, inView, float)
   // Float layers on top of scroll drift: combined y = parallax + noise.
@@ -348,7 +460,8 @@ function HeroShape({ shape, progress, reduced, scrollAt, inView, float }: ShapeP
     filter: `blur(${shape.blur}px)`,
   }
   const cls = `absolute ${shape.bg} ${shape.radius}`
-  if (reduced) return <div className={cls} style={{ ...base, transform: `rotate(${shape.rotate}deg)` }} />
+  if (reduced)
+    return <div className={cls} style={{ ...base, transform: `rotate(${shape.rotate}deg)` }} />
   // Own compositor layer: parallax/float moves re-composite, not re-raster.
   return <motion.div className={cls} style={{ ...base, x, rotate, y, willChange: 'transform' }} />
 }
@@ -358,7 +471,18 @@ function HeroShape({ shape, progress, reduced, scrollAt, inView, float }: ShapeP
  * but a pointer-reactive WebGL canvas instead of a static blurred swatch. The
  * box is padded out so the shape's soft edge isn't clipped by the canvas bounds.
  */
-function BlurShape({ shape, progress, reduced, scrollAt, inView, float, hoverBlur, autoBlur, grain, paused }: ShapeProps) {
+function BlurShape({
+  shape,
+  progress,
+  reduced,
+  scrollAt,
+  inView,
+  float,
+  hoverBlur,
+  autoBlur,
+  grain,
+  paused,
+}: ShapeProps) {
   const yDrift = useTransform(progress, [0, 1], [0, shape.drift])
   const { x, y: fy, rot } = useFloat(floatSeed(shape), reduced, scrollAt, inView, float)
   const y = useTransform([yDrift, fy], ([a, b]: number[]) => a + b)
@@ -375,25 +499,32 @@ function BlurShape({ shape, progress, reduced, scrollAt, inView, float, hoverBlu
     left: shape.left - pad,
   }
   const content = (
-    <ShapeBlur
-      variation={shape.variation}
-      color={shape.color}
-      color2={shape.color2}
-      shapeSize={shape.shapeSize ?? 0.9}
-      roundness={0.5}
-      borderSize={0.09}
-      circleSize={0.55}
-      circleEdge={1}
-      baseBlur={shape.baseBlur ?? 0.25}
-      pixelRatioProp={1.5}
-      reduced={reduced || (!hoverBlur && !autoBlur)}
-      autoMotion={autoBlur}
-      grainAmount={grain ? SHADER_GRAIN_AMOUNT : 0}
-      grainScale={SHADER_GRAIN_SCALE}
-      paused={paused}
-    />
+    <Suspense fallback={null}>
+      <ShapeBlur
+        variation={shape.variation}
+        color={shape.color}
+        color2={shape.color2}
+        shapeSize={shape.shapeSize ?? 0.9}
+        roundness={0.5}
+        borderSize={0.09}
+        circleSize={0.55}
+        circleEdge={1}
+        baseBlur={shape.baseBlur ?? 0.25}
+        pixelRatioProp={1.5}
+        reduced={reduced || (!hoverBlur && !autoBlur)}
+        autoMotion={autoBlur}
+        grainAmount={grain ? SHADER_GRAIN_AMOUNT : 0}
+        grainScale={SHADER_GRAIN_SCALE}
+        paused={paused}
+      />
+    </Suspense>
   )
-  if (reduced) return <div className="absolute" style={{ ...base, transform: `rotate(${shape.rotate}deg)` }}>{content}</div>
+  if (reduced)
+    return (
+      <div className="absolute" style={{ ...base, transform: `rotate(${shape.rotate}deg)` }}>
+        {content}
+      </div>
+    )
   return (
     <motion.div className="absolute" style={{ ...base, x, rotate, y, willChange: 'transform' }}>
       {content}
@@ -523,7 +654,7 @@ export function Hero() {
   // slower than the surrounding content.
   const bgY = useTransform(
     scrollYProgress,
-    (p) => -19.25 * (1 - p) + PARALLAX_FACTOR * p * panelSize.h,
+    (p) => -19.25 * (1 - p) + PARALLAX_FACTOR * p * panelSize.h
   )
   // Text parallax — independent of the tilt: drifts up, stays flat.
   const textY = useTransform(scrollYProgress, [0, 1], [0, -120])
@@ -541,6 +672,15 @@ export function Hero() {
           animate: { opacity: 1, y: 0, scale: 1 },
           transition: { ...springHero, delay: 0.2 },
         }
+
+  // Props shared by both shape variants (position/size/drift/float gating).
+  const baseShapeProps: Omit<BaseShapeProps, 'shape'> = {
+    progress: scrollYProgress,
+    reduced: !!reduced,
+    scrollAt,
+    inView: inView && active,
+    float: modes.FLOAT && atTop,
+  }
 
   return (
     <section ref={ref} className="relative z-10">
@@ -604,19 +744,27 @@ export function Hero() {
             }}
           />
           {/* First "Noise" layer: sits *under* the shapes on the live site. */}
-          <Grain src={NOISE_PNG} blend="overlay" opacity={0.16} />
+          <Grain src={NOISE_IMG} blend="overlay" opacity={0.16} />
           {/* Blurred shape field (decorative). Clipped by overflow-hidden above.
               Paint order matches the live site: blue, green, red blobs, then the
               yellow triangle on top. Each parallax-drifts on scroll. */}
           <div aria-hidden className="absolute inset-0">
             {modes.SHAPE_BLUR ? (
               shapes.map((s, i) => (
-                <BlurShape key={i} shape={s} progress={scrollYProgress} reduced={!!reduced} scrollAt={scrollAt} inView={inView && active} float={modes.FLOAT && atTop} hoverBlur={modes.HOVER_BLUR} autoBlur={modes.AUTO_BLUR} grain={modes.GRAIN} paused={!atTop} />
+                <BlurShape
+                  key={i}
+                  shape={s}
+                  {...baseShapeProps}
+                  hoverBlur={modes.HOVER_BLUR}
+                  autoBlur={modes.AUTO_BLUR}
+                  grain={modes.GRAIN}
+                  paused={!atTop}
+                />
               ))
             ) : (
               <>
                 {shapes.map((s, i) => (
-                  <HeroShape key={i} shape={s} progress={scrollYProgress} reduced={!!reduced} scrollAt={scrollAt} inView={inView && active} float={modes.FLOAT && atTop} hoverBlur={modes.HOVER_BLUR} autoBlur={modes.AUTO_BLUR} grain={modes.GRAIN} paused={!atTop} />
+                  <HeroShape key={i} shape={s} {...baseShapeProps} />
                 ))}
                 <YellowTriangle progress={scrollYProgress} reduced={!!reduced} />
               </>
@@ -632,8 +780,8 @@ export function Hero() {
               re-raster while the shapes move. */}
           {!(modes.GRAIN && modes.SHAPE_BLUR) && (
             <>
-              <Grain src={GRAIN_PNG} blend="multiply" opacity={0.04} />
-              <Grain src={NOISE_PNG} blend="overlay" opacity={0.15} />
+              <Grain src={GRAIN_IMG} blend="multiply" opacity={0.04} />
+              <Grain src={NOISE_IMG} blend="overlay" opacity={0.15} />
             </>
           )}
         </motion.div>
@@ -674,7 +822,13 @@ export function Hero() {
  * bottom-right; choices persist via {@link updateModes} → localStorage. Reset
  * clears the override so the page falls back to {@link DEFAULT_MODES}.
  */
-function HeroDevPanel({ modes, onChange }: { modes: HeroModes; onChange: (patch: Partial<HeroModes>) => void }) {
+function HeroDevPanel({
+  modes,
+  onChange,
+}: {
+  modes: HeroModes
+  onChange: (patch: Partial<HeroModes>) => void
+}) {
   if (!import.meta.env.DEV) return null
   const row = 'flex items-center justify-between gap-3'
   return (
@@ -702,32 +856,62 @@ function HeroDevPanel({ modes, onChange }: { modes: HeroModes; onChange: (patch:
 
       <label className={`${row} mb-1.5 cursor-pointer`}>
         <span>shapes: {modes.SHAPE_BLUR ? 'WebGL blur' : '1:1 Framer'}</span>
-        <input type="checkbox" checked={modes.SHAPE_BLUR} onChange={(e) => onChange({ SHAPE_BLUR: e.target.checked })} />
+        <input
+          type="checkbox"
+          checked={modes.SHAPE_BLUR}
+          onChange={(e) => onChange({ SHAPE_BLUR: e.target.checked })}
+        />
       </label>
 
       <label className={`${row} mb-1.5 cursor-pointer`}>
         <span>tilt: {modes.CLIP_TILT ? '2D clip' : '3D rotateX'}</span>
-        <input type="checkbox" checked={modes.CLIP_TILT} onChange={(e) => onChange({ CLIP_TILT: e.target.checked })} />
+        <input
+          type="checkbox"
+          checked={modes.CLIP_TILT}
+          onChange={(e) => onChange({ CLIP_TILT: e.target.checked })}
+        />
       </label>
 
       <label className={`${row} mb-1.5 cursor-pointer`}>
         <span>float: {modes.FLOAT ? 'on' : 'off'}</span>
-        <input type="checkbox" checked={modes.FLOAT} onChange={(e) => onChange({ FLOAT: e.target.checked })} />
+        <input
+          type="checkbox"
+          checked={modes.FLOAT}
+          onChange={(e) => onChange({ FLOAT: e.target.checked })}
+        />
       </label>
 
-      <label className={`${row} mb-1.5 cursor-pointer ${modes.SHAPE_BLUR ? '' : 'pointer-events-none opacity-40'}`}>
+      <label
+        className={`${row} mb-1.5 cursor-pointer ${modes.SHAPE_BLUR ? '' : 'pointer-events-none opacity-40'}`}
+      >
         <span>hover blur: {modes.HOVER_BLUR ? 'on' : 'off'}</span>
-        <input type="checkbox" checked={modes.HOVER_BLUR} onChange={(e) => onChange({ HOVER_BLUR: e.target.checked })} />
+        <input
+          type="checkbox"
+          checked={modes.HOVER_BLUR}
+          onChange={(e) => onChange({ HOVER_BLUR: e.target.checked })}
+        />
       </label>
 
-      <label className={`${row} mb-1.5 cursor-pointer ${modes.SHAPE_BLUR ? '' : 'pointer-events-none opacity-40'}`}>
+      <label
+        className={`${row} mb-1.5 cursor-pointer ${modes.SHAPE_BLUR ? '' : 'pointer-events-none opacity-40'}`}
+      >
         <span>auto blur: {modes.AUTO_BLUR ? 'on' : 'off'}</span>
-        <input type="checkbox" checked={modes.AUTO_BLUR} onChange={(e) => onChange({ AUTO_BLUR: e.target.checked })} />
+        <input
+          type="checkbox"
+          checked={modes.AUTO_BLUR}
+          onChange={(e) => onChange({ AUTO_BLUR: e.target.checked })}
+        />
       </label>
 
-      <label className={`${row} mb-1.5 cursor-pointer ${modes.SHAPE_BLUR ? '' : 'pointer-events-none opacity-40'}`}>
+      <label
+        className={`${row} mb-1.5 cursor-pointer ${modes.SHAPE_BLUR ? '' : 'pointer-events-none opacity-40'}`}
+      >
         <span>grain: {modes.GRAIN && modes.SHAPE_BLUR ? 'shader' : 'CSS blend'}</span>
-        <input type="checkbox" checked={modes.GRAIN} onChange={(e) => onChange({ GRAIN: e.target.checked })} />
+        <input
+          type="checkbox"
+          checked={modes.GRAIN}
+          onChange={(e) => onChange({ GRAIN: e.target.checked })}
+        />
       </label>
 
       <label className={`${row} ${modes.CLIP_TILT ? '' : 'pointer-events-none opacity-40'}`}>

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Text } from '@/components/primitives'
+import { Card, Text } from '@/components/primitives'
 import { Reveal } from '@/motion/Reveal'
 import { career, type TextRun } from '@/content'
 
@@ -25,7 +25,7 @@ export function About({ delay = 0 }: { delay?: number }) {
 
   return (
     <Reveal delay={delay}>
-      <div className="rounded-card bg-paper-0 p-8 tablet:p-11">
+      <Card>
         <Text as="p" variant="lead">
           {renderRuns(lead)}
         </Text>
@@ -34,7 +34,7 @@ export function About({ delay = 0 }: { delay?: number }) {
             {renderRuns(paragraph)}
           </Text>
         ))}
-      </div>
+      </Card>
     </Reveal>
   )
 }

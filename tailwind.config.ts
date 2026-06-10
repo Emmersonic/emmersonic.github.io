@@ -28,36 +28,29 @@ export default {
         },
         swatch: {
           red: 'var(--swatch-red)',
-          'red-soft': 'var(--swatch-red-soft)',
           green: 'var(--swatch-green)',
           yellow: 'var(--swatch-yellow)',
-          peach: 'var(--swatch-peach)',
-          purple: 'var(--swatch-purple)',
         },
         gold: {
           0: 'var(--gold-0)',
           1: 'var(--gold-1)',
           hi: 'var(--gold-hi)',
         },
-        glass: {
-          dark: 'var(--glass-dark)',
-        },
       },
       fontFamily: {
         display: 'var(--font-display)',
         body: 'var(--font-body)',
-        wide: 'var(--font-wide)',
         mono: 'var(--font-mono)',
       },
       fontSize: {
         // Real scale measured from the live site (New Spirit / Inter).
         // Live: 56px / line-height 1.0em / no letter-spacing (white over blobs).
         hero: ['clamp(34px, 5.6vw, 56px)', { lineHeight: '1' }],
-        // Live: New Spirit Medium 28px / line-height 1.4em.
+        // Live measures New Spirit Medium 28px / lh 1.4em; rendered at 30px here.
         hiya: ['30px', { lineHeight: '1.4' }],
         lead: ['22px', { lineHeight: '1.5' }],
         serif: ['18px', { lineHeight: '1.6' }],
-        // Live: Inter 12px / line-height 24px / letter-spacing 1.2px (kickers + love-card labels).
+        // Live measures Inter 12px / lh 24px / ls 1.2px; rendered at 14px here (kickers + love-card labels).
         kicker: ['14px', { lineHeight: '2', letterSpacing: '1.2px' }],
         ui: ['16px', { lineHeight: '1.4', letterSpacing: '0.1px' }],
         meta: ['14px', { lineHeight: '1.6' }],
@@ -66,25 +59,16 @@ export default {
         card: 'var(--radius-card)',
         pill: 'var(--radius-pill)',
       },
-      backdropBlur: {
-        'glass-sm': '8px',
-        'glass-md': '15px',
-        'glass-lg': '30px',
-      },
       transitionTimingFunction: {
         standard: 'var(--ease-standard)',
       },
       transitionDuration: {
         fast: '300ms',
       },
-      maxWidth: {
-        container: '1200px',
-      },
       backgroundImage: {
         'orb-blue': 'var(--orb-blue)',
         'orb-peach': 'var(--orb-peach)',
         'orb-gold': 'var(--orb-gold)',
-        'sheen-gold': 'var(--sheen-gold)',
       },
     },
   },

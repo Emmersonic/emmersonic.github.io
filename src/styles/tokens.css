@@ -15,39 +15,37 @@
   --accent-2: #38c0ff;
   --accent-3: #0f8bff;
 
-  /* Playful swatch accents (emoji chips, tags, decorative dots) */
+  /* Playful swatch accents (hero blobs, decorative dots) */
   --swatch-red: #f74a4a;
   --swatch-red-soft: #fd6d6d;
   --swatch-green: #4af78a;
   --swatch-yellow: #fff04d;
-  --swatch-peach: #ffd59e;
-  --swatch-purple: #541feb;
 
   /* Warm gold/brown (decorative gradient sheen + glows) */
   --gold-0: #916e49;
   --gold-1: #926f49;
   --gold-hi: #edd7a1;
 
-  /* Glass / overlay */
-  --glass-dark: rgba(18, 18, 18, 0.74);
-  --overlay-1a: rgba(0, 0, 0, 0.1);
-
   /* Radius */
   --radius-card: 40px;
-  --radius-pill: 999px;
-
-  /* Blur */
-  --blur-glass-sm: 8px;
-  --blur-glass-md: 15px;
-  --blur-glass-lg: 30px;
 
   /* Motion */
   --ease-standard: cubic-bezier(0.44, 0, 0.56, 1);
-  --dur-fast: 0.3s;
+
+  /* Hero blob tints (WebGL ShapeBlur gradient pairs). Aliased to the core
+     palette where an exact match exists; the rest are tuned companions used
+     only by the hero shader fills. Resolved at runtime via getComputedStyle. */
+  --shape-blue-1: var(--accent-2);
+  --shape-blue-2: var(--accent-3);
+  --shape-green-1: #5bff97;
+  --shape-green-2: #22d36e;
+  --shape-red-1: var(--swatch-red-soft);
+  --shape-red-2: #f53a3a;
+  --shape-yellow-1: #fff7a0;
+  --shape-yellow-2: #ffe34d;
 
   /* Decorative gradients */
   --orb-blue: radial-gradient(65.8% 78.7% at 25.5% 21.5%, #38c0ff 0%, #0f8bff 100%);
   --orb-peach: radial-gradient(77.3% 90.4% at 91.1% 64.3%, #ff971747 0%, #ababab00 100%);
   --orb-gold: radial-gradient(77.3% 90.4% at 62.1% 0, #edd7a114 0%, #ababab00 100%);
-  --sheen-gold: linear-gradient(#916e4900 6%, #916e4905 37%, #926f4933 100%);
 }

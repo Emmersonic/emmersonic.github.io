@@ -19,22 +19,18 @@ const colorTokens = [
   'accent-2',
   'accent-3',
   'swatch-red',
-  'swatch-red-soft',
   'swatch-green',
   'swatch-yellow',
-  'swatch-peach',
-  'swatch-purple',
   'gold-0',
   'gold-1',
   'gold-hi',
-  'glass-dark',
 ]
 
 const twMerge = extendTailwindMerge({
   extend: {
     classGroups: {
       'font-size': [{ text: ['hero', 'hiya', 'lead', 'serif', 'kicker', 'ui', 'meta'] }],
-      'font-family': [{ font: ['display', 'body', 'wide'] }],
+      'font-family': [{ font: ['display', 'body', 'mono'] }],
       'text-color': [{ text: colorTokens }],
       'bg-color': [{ bg: colorTokens }],
       'border-color': [{ border: colorTokens }],

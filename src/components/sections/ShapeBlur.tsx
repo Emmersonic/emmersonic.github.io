@@ -178,6 +178,37 @@ void main() {
 }
 `
 
+/**
+ * Shared event fan-out: four ShapeBlur instances each need pointermove/scroll/
+ * resize, but four document/window listeners doing identical work is waste.
+ * One real listener per event type, attached while any instance is subscribed.
+ * Targets are resolved lazily (inside the subscribe call, which only runs in
+ * an effect) so module evaluation never touches `document`.
+ */
+function makeSharedListener(getTarget: () => EventTarget, type: string) {
+  const subs = new Set<(e: Event) => void>()
+  const handler = (e: Event) => subs.forEach((fn) => fn(e))
+  return (fn: (e: Event) => void) => {
+    if (subs.size === 0) getTarget().addEventListener(type, handler, { passive: true })
+    subs.add(fn)
+    return () => {
+      subs.delete(fn)
+      if (subs.size === 0) getTarget().removeEventListener(type, handler)
+    }
+  }
+}
+const subscribePointerMove = makeSharedListener(() => document, 'pointermove')
+const subscribeScroll = makeSharedListener(() => window, 'scroll')
+const subscribeResize = makeSharedListener(() => window, 'resize')
+
+/** Resolve a CSS color that may be a `var(--token)` reference against `el`. */
+function resolveColor(color: string, el: Element): string {
+  const c = color.trim()
+  if (!c.startsWith('var(')) return c
+  const name = c.slice(4, -1).split(',')[0].trim()
+  return getComputedStyle(el).getPropertyValue(name).trim() || '#ffffff'
+}
+
 interface ShapeBlurProps {
   className?: string
   variation?: number
@@ -187,9 +218,9 @@ interface ShapeBlurProps {
   borderSize?: number
   circleSize?: number
   circleEdge?: number
-  /** Hex tint applied to the shape (upstream hard-codes white). */
+  /** Tint applied to the shape — hex or `var(--token)` (upstream hard-codes white). */
   color?: string
-  /** Second hex for a diagonal gradient fill; omit/equal to color for flat. */
+  /** Second color for a diagonal gradient fill; omit/equal to color for flat. */
   color2?: string
   /** Constant edge softness present even without hover; the pointer adds more. */
   baseBlur?: number
@@ -253,6 +284,31 @@ export default function ShapeBlur({
   const pausedRef = useRef(false)
   const startRef = useRef<() => void>(() => {})
 
+  // Pure-uniform props, kept out of the main effect's deps: changing a tint or
+  // grain setting must update GPU uniforms + repaint one frame, NOT dispose and
+  // rebuild the whole WebGL context. The ref gives the main effect the latest
+  // values at (re)build time; the small sync effect below applies live changes.
+  const uniformProps = {
+    color,
+    color2,
+    baseBlur,
+    shapeSize,
+    roundness,
+    borderSize,
+    circleSize,
+    circleEdge,
+    grainAmount,
+    grainScale,
+  }
+  const uniformPropsRef = useRef(uniformProps)
+  // Declared BEFORE the main effect so, in any commit, the ref holds this
+  // render's values by the time the main effect (re)builds the material.
+  useEffect(() => {
+    uniformPropsRef.current = uniformProps
+  })
+  const materialRef = useRef<THREE.ShaderMaterial | null>(null)
+  const redrawRef = useRef<() => void>(() => {})
+
   useEffect(() => {
     const mount = mountRef.current
     if (!mount) return
@@ -289,6 +345,7 @@ export default function ShapeBlur({
     mount.appendChild(renderer.domElement)
 
     const geo = new THREE.PlaneGeometry(1, 1)
+    const up = uniformPropsRef.current
     const material = new THREE.ShaderMaterial({
       vertexShader,
       fragmentShader,
@@ -296,20 +353,21 @@ export default function ShapeBlur({
         u_mouse: { value: vMouseDamp },
         u_resolution: { value: vResolution },
         u_pixelRatio: { value: pixelRatioProp },
-        u_color: { value: new THREE.Color(color) },
-        u_color2: { value: new THREE.Color(color2 || color) },
-        u_baseBlur: { value: baseBlur },
-        u_shapeSize: { value: shapeSize },
-        u_roundness: { value: roundness },
-        u_borderSize: { value: borderSize },
-        u_circleSize: { value: circleSize },
-        u_circleEdge: { value: circleEdge },
-        u_grainAmount: { value: grainAmount },
-        u_grainScale: { value: grainScale },
+        u_color: { value: new THREE.Color(resolveColor(up.color, mount)) },
+        u_color2: { value: new THREE.Color(resolveColor(up.color2 || up.color, mount)) },
+        u_baseBlur: { value: up.baseBlur },
+        u_shapeSize: { value: up.shapeSize },
+        u_roundness: { value: up.roundness },
+        u_borderSize: { value: up.borderSize },
+        u_circleSize: { value: up.circleSize },
+        u_circleEdge: { value: up.circleEdge },
+        u_grainAmount: { value: up.grainAmount },
+        u_grainScale: { value: up.grainScale },
       },
       defines: { VAR: variation },
       transparent: true,
     })
+    materialRef.current = material
 
     const quad = new THREE.Mesh(geo, material)
     scene.add(quad)
@@ -411,17 +469,20 @@ export default function ShapeBlur({
       animationFrameId = requestAnimationFrame(update)
     }
     // Expose start so the paused-sync effect can wake the loop without re-running
-    // this effect (which would rebuild the WebGL context).
+    // this effect (which would rebuild the WebGL context). Same for redraw, which
+    // the uniform-sync effect uses to repaint a parked static shape.
     startRef.current = start
+    redrawRef.current = () => renderer.render(scene, camera)
 
-    const onPointerMove = (e: PointerEvent) => {
+    const onPointerMove = (e: Event) => {
+      const pe = e as PointerEvent
       if (!visible || reduced || performance.now() - lastScrollAt < SCROLL_IDLE_MS) return
-      vMouse.set(e.clientX - rect.left, e.clientY - rect.top)
+      vMouse.set(pe.clientX - rect.left, pe.clientY - rect.top)
       start()
     }
 
-    document.addEventListener('pointermove', onPointerMove, { passive: true })
-    window.addEventListener('scroll', onScroll, { passive: true })
+    const unsubPointer = subscribePointerMove(onPointerMove)
+    const unsubScroll = subscribeScroll(onScroll)
 
     const resize = () => {
       if (!active) return
@@ -446,7 +507,7 @@ export default function ShapeBlur({
     }
 
     resize()
-    window.addEventListener('resize', resize)
+    const unsubResize = subscribeResize(resize)
 
     const ro = new ResizeObserver(() => {
       if (!active) return
@@ -461,7 +522,7 @@ export default function ShapeBlur({
         visible = entry.isIntersecting
         if (visible) start()
       },
-      { rootMargin: '100px' },
+      { rootMargin: '100px' }
     )
     io.observe(mount)
 
@@ -474,11 +535,13 @@ export default function ShapeBlur({
 
       cancelAnimationFrame(animationFrameId)
       clearTimeout(rectTimer)
-      window.removeEventListener('resize', resize)
-      window.removeEventListener('scroll', onScroll)
+      unsubResize()
+      unsubScroll()
+      unsubPointer()
       ro.disconnect()
       io.disconnect()
-      document.removeEventListener('pointermove', onPointerMove)
+      materialRef.current = null
+      redrawRef.current = () => {}
       if (mount.contains(renderer.domElement)) {
         mount.removeChild(renderer.domElement)
       }
@@ -487,7 +550,50 @@ export default function ShapeBlur({
       renderer.dispose()
       renderer.forceContextLoss()
     }
-  }, [variation, pixelRatioProp, shapeSize, roundness, borderSize, circleSize, circleEdge, color, color2, baseBlur, reduced, autoMotion, autoShape, autoSpeed, autoCenterX, autoCenterY, autoRadiusX, autoRadiusY, grainAmount, grainScale])
+  }, [
+    variation,
+    pixelRatioProp,
+    reduced,
+    autoMotion,
+    autoShape,
+    autoSpeed,
+    autoCenterX,
+    autoCenterY,
+    autoRadiusX,
+    autoRadiusY,
+  ])
+
+  // Live uniform sync: tint/blur/grain changes flow straight to the GPU and one
+  // repaint — no context teardown. (The main effect re-reads these via
+  // uniformPropsRef when it does rebuild, so the two paths can't disagree.)
+  useEffect(() => {
+    const material = materialRef.current
+    const mount = mountRef.current
+    if (!material || !mount) return
+    const u = material.uniforms
+    u.u_color.value.set(resolveColor(color, mount))
+    u.u_color2.value.set(resolveColor(color2 || color, mount))
+    u.u_baseBlur.value = baseBlur
+    u.u_shapeSize.value = shapeSize
+    u.u_roundness.value = roundness
+    u.u_borderSize.value = borderSize
+    u.u_circleSize.value = circleSize
+    u.u_circleEdge.value = circleEdge
+    u.u_grainAmount.value = grainAmount
+    u.u_grainScale.value = grainScale
+    redrawRef.current()
+  }, [
+    color,
+    color2,
+    baseBlur,
+    shapeSize,
+    roundness,
+    borderSize,
+    circleSize,
+    circleEdge,
+    grainAmount,
+    grainScale,
+  ])
 
   // Park / un-park the loop when `paused` flips, without disposing the context.
   useEffect(() => {

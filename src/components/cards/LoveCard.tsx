@@ -1,5 +1,5 @@
 import { cn } from '@/lib/cn'
-import { AnimatedLink, Text } from '@/components/primitives'
+import { AnimatedLink, Card, Text } from '@/components/primitives'
 import { CircularText } from '@/motion/CircularText'
 
 interface LoveItem {
@@ -37,9 +37,10 @@ export function LoveCard({
   // Repeat the label around the ring with bullet separators so it reads as a loop.
   const ringText = `${label.toUpperCase()} • RECOMMENDED • `
   return (
-    <div
+    <Card
+      tone="white"
       className={cn(
-        'relative h-full overflow-hidden rounded-card border border-black/5 bg-white p-8 tablet:p-11',
+        'relative h-full overflow-hidden',
         circular ? 'pr-8 tablet:pr-11' : 'pr-14 tablet:pr-16',
         className
       )}
@@ -80,6 +81,6 @@ export function LoveCard({
           </li>
         ))}
       </ul>
-    </div>
+    </Card>
   )
 }

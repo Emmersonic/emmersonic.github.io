@@ -1,8 +1,10 @@
-import { useEffect } from 'react'
-import { motion, useAnimation, useMotionValue, useReducedMotion } from 'motion/react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { motion, useAnimation, useInView, useMotionValue, useReducedMotion } from 'motion/react'
 import { cn } from '@/lib/cn'
 
 type HoverMode = 'speedUp' | 'slowDown' | 'pause' | 'goBonkers'
+
+const SPRING = { type: 'spring' as const, damping: 20, stiffness: 300 }
 
 interface CircularTextProps {
   /** Text laid out around the ring. Repeats once around the full circle. */
@@ -27,7 +29,7 @@ const rotationTween = (duration: number, from: number) => ({
 
 const getTransition = (duration: number, from: number) => ({
   rotate: rotationTween(duration, from),
-  scale: { type: 'spring' as const, damping: 20, stiffness: 300 },
+  scale: SPRING,
 })
 
 /**
@@ -42,20 +44,34 @@ export function CircularText({
   radius = 70,
   className,
 }: CircularTextProps) {
-  const letters = Array.from(text)
+  const letters = useMemo(() => Array.from(text), [text])
   const controls = useAnimation()
   const rotation = useMotionValue(0)
   const reduced = useReducedMotion()
+  const ref = useRef<HTMLDivElement>(null)
+  // The tween is JS-driven (main-thread work every frame, forever) — park it
+  // while the ring is scrolled out of view and resume from the same angle.
+  const inView = useInView(ref)
 
-  useEffect(() => {
-    if (reduced) return
+  // Restart the steady forever-spin from the current angle (mount, scroll back
+  // into view, and after hover).
+  const startSpin = useCallback(() => {
     const start = rotation.get()
     controls.start({
       rotate: start + 360,
       scale: 1,
       transition: getTransition(spinDuration, start),
     })
-  }, [spinDuration, text, reduced, controls, rotation])
+  }, [controls, rotation, spinDuration])
+
+  useEffect(() => {
+    if (reduced) return
+    if (!inView) {
+      controls.stop()
+      return
+    }
+    startSpin()
+  }, [reduced, inView, controls, startSpin])
 
   const handleHoverStart = () => {
     if (reduced || !onHover) return
@@ -75,26 +91,19 @@ export function CircularText({
         break
       case 'pause':
       default:
-        transition = {
-          rotate: { type: 'spring' as const, damping: 20, stiffness: 300 },
-          scale: { type: 'spring' as const, damping: 20, stiffness: 300 },
-        }
+        transition = { rotate: SPRING, scale: SPRING }
     }
     controls.start({ rotate: start + 360, scale, transition })
   }
 
   const handleHoverEnd = () => {
     if (reduced) return
-    const start = rotation.get()
-    controls.start({
-      rotate: start + 360,
-      scale: 1,
-      transition: getTransition(spinDuration, start),
-    })
+    startSpin()
   }
 
   return (
     <motion.div
+      ref={ref}
       aria-hidden
       className={cn('relative size-full origin-center', className)}
       style={{ rotate: rotation }}
