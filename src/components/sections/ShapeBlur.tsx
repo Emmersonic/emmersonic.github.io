@@ -324,6 +324,10 @@ export default function ShapeBlur({
     let time = 0,
       lastTime = 0,
       lastDraw = 0
+    // Accumulated orbit phase — only advances when the loop actually renders a
+    // frame. Wall-clock `time * autoSpeed` would jump after a pause/resume because
+    // time kept moving while the loop was parked; phase stays frozen instead.
+    let phase = 0
 
     // Auto mode runs a steady loop (the path never settles), so cap it at 30fps
     // to halve GPU/fill-rate cost — the heavy blur hides the lower cadence.
@@ -427,8 +431,13 @@ export default function ShapeBlur({
       }
       lastDraw = time
 
-      const dt = time - lastTime
+      // Cap rawDt at 100ms so scroll-throttle gaps (where lastTime isn't updated
+      // during the early-return loop) don't cause a large phase jump on the first
+      // rendered frame after scroll ends.
+      const rawDt = time - lastTime
       lastTime = time
+      const dt = Math.min(rawDt, 0.1)
+      if (AUTO) phase += dt * autoSpeed
 
       // Drive the reveal point along a panel-local path. offsetParent is the
       // shape container that fills the panel, so the same path → the same world
@@ -441,7 +450,7 @@ export default function ShapeBlur({
         const cy = ph * autoCenterY
         const rx = pw * autoRadiusX
         const ry = ph * autoRadiusY
-        const th = time * autoSpeed
+        const th = phase
         const px = autoShape === 'figure8' ? cx + rx * Math.sin(th) : cx + rx * Math.cos(th)
         const py = autoShape === 'figure8' ? cy + ry * Math.sin(2 * th) : cy + ry * Math.sin(th)
         vMouse.set(px - mount.offsetLeft, py - mount.offsetTop)

@@ -11,7 +11,7 @@ interface PageShellProps {
  */
 export function PageShell({ children }: PageShellProps) {
   return (
-    <div className="min-h-screen overflow-x-clip bg-paper-1 text-ink">
+    <div className="min-h-screen overflow-x-clip [overflow-y:clip] bg-paper-1 text-ink">
       {children}
       <TopBlur />
     </div>

@@ -72,7 +72,7 @@ export function LoveCard({
       <ul className="space-y-5">
         {items.map((item) => (
           <li key={item.name}>
-            <AnimatedLink href={item.href} underline className={cn(toneText, 'hover:opacity-70')}>
+            <AnimatedLink href={item.href}>
               {item.name}
             </AnimatedLink>
             <Text as="p" variant="meta" className="mt-0.5 max-w-[60ch] text-ink-muted">

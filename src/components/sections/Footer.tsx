@@ -16,7 +16,7 @@ export function Footer({ delay = 0 }: { delay?: number }) {
           <AnimatedLink
             href={'mailto:' + footer.email}
             external={false}
-            className="font-display text-lead font-normal text-ink-strong hover:text-accent"
+            className="font-display text-lead font-normal"
           >
             {footer.email}
           </AnimatedLink>
