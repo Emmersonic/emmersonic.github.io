@@ -1,116 +1,33 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react'
-import { motion, useAnimation, useInView, useMotionValue, useReducedMotion } from 'motion/react'
+import type { CSSProperties } from 'react'
 import { cn } from '@/lib/cn'
-
-type HoverMode = 'speedUp' | 'slowDown' | 'pause' | 'goBonkers'
-
-const SPRING = { type: 'spring' as const, damping: 20, stiffness: 300 }
 
 interface CircularTextProps {
   /** Text laid out around the ring. Repeats once around the full circle. */
   text: string
   /** Seconds for one full revolution. */
   spinDuration?: number
-  /** What hovering does. Defaults to pausing the spin. */
-  onHover?: HoverMode
   /** Ring radius in px — how far each letter sits from the centre. */
   radius?: number
   className?: string
 }
 
-const rotationTween = (duration: number, from: number) => ({
-  from,
-  to: from + 360,
-  ease: 'linear' as const,
-  duration,
-  type: 'tween' as const,
-  repeat: Infinity,
-})
-
-const getTransition = (duration: number, from: number) => ({
-  rotate: rotationTween(duration, from),
-  scale: SPRING,
-})
-
 /**
  * Reactbits-style ring of text that rotates forever. Each character is
- * absolutely placed at its angle around the circle. Hovering changes the
- * spin (pause by default). `prefers-reduced-motion` renders a static ring.
+ * absolutely placed at its angle around the circle; the ring itself spins via
+ * a compositor-only CSS animation (`animate-circular-spin`, defined in
+ * globals.css) rather than main-thread JS, so it costs nothing while
+ * off-screen. Hovering pauses the spin (`:hover { animation-play-state:
+ * paused }`); `prefers-reduced-motion` is handled by the sitewide rule in
+ * globals.css.
  */
-export function CircularText({
-  text,
-  spinDuration = 20,
-  onHover = 'pause',
-  radius = 70,
-  className,
-}: CircularTextProps) {
-  const letters = useMemo(() => Array.from(text), [text])
-  const controls = useAnimation()
-  const rotation = useMotionValue(0)
-  const reduced = useReducedMotion()
-  const ref = useRef<HTMLDivElement>(null)
-  // The tween is JS-driven (main-thread work every frame, forever) — park it
-  // while the ring is scrolled out of view and resume from the same angle.
-  const inView = useInView(ref)
-
-  // Restart the steady forever-spin from the current angle (mount, scroll back
-  // into view, and after hover).
-  const startSpin = useCallback(() => {
-    const start = rotation.get()
-    controls.start({
-      rotate: start + 360,
-      scale: 1,
-      transition: getTransition(spinDuration, start),
-    })
-  }, [controls, rotation, spinDuration])
-
-  useEffect(() => {
-    if (reduced) return
-    if (!inView) {
-      controls.stop()
-      return
-    }
-    startSpin()
-  }, [reduced, inView, controls, startSpin])
-
-  const handleHoverStart = () => {
-    if (reduced || !onHover) return
-    const start = rotation.get()
-    let transition
-    let scale = 1
-    switch (onHover) {
-      case 'slowDown':
-        transition = getTransition(spinDuration * 2, start)
-        break
-      case 'speedUp':
-        transition = getTransition(spinDuration / 4, start)
-        break
-      case 'goBonkers':
-        transition = getTransition(spinDuration / 20, start)
-        scale = 0.8
-        break
-      case 'pause':
-      default:
-        transition = { rotate: SPRING, scale: SPRING }
-    }
-    controls.start({ rotate: start + 360, scale, transition })
-  }
-
-  const handleHoverEnd = () => {
-    if (reduced) return
-    startSpin()
-  }
+export function CircularText({ text, spinDuration = 20, radius = 70, className }: CircularTextProps) {
+  const letters = Array.from(text)
 
   return (
-    <motion.div
-      ref={ref}
+    <div
       aria-hidden
-      className={cn('relative size-full origin-center', className)}
-      style={{ rotate: rotation }}
-      initial={{ rotate: 0 }}
-      animate={controls}
-      onMouseEnter={handleHoverStart}
-      onMouseLeave={handleHoverEnd}
+      className={cn('relative size-full origin-center animate-circular-spin', className)}
+      style={{ '--spin-duration': `${spinDuration}s` } as CSSProperties}
     >
       {letters.map((letter, i) => {
         const deg = (360 / letters.length) * i
@@ -128,6 +45,6 @@ export function CircularText({
           </span>
         )
       })}
-    </motion.div>
+    </div>
   )
 }

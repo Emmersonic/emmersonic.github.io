@@ -36,6 +36,11 @@ export default {
           1: 'var(--gold-1)',
           hi: 'var(--gold-hi)',
         },
+        link: {
+          DEFAULT: 'var(--link)',
+          hover: 'var(--link-hover)',
+          underline: 'var(--link-underline)',
+        },
       },
       fontFamily: {
         display: 'var(--font-display)',
@@ -68,6 +73,7 @@ export default {
       backgroundImage: {
         'orb-blue': 'var(--orb-blue)',
         'orb-peach': 'var(--orb-peach)',
+        'orb-peach-left': 'var(--orb-peach-left)',
         'orb-gold': 'var(--orb-gold)',
       },
     },

@@ -9,6 +9,7 @@ import {
   Sidebar,
   SitesILove,
   ToolsILove,
+  DSSection,
 } from '@/components/sections'
 
 /**
@@ -45,6 +46,7 @@ export default function App() {
             <div className="grid grid-cols-1 gap-6">
               <ToolsILove delay={revealAt.tools} />
               <SitesILove delay={revealAt.sites} />
+              <DSSection delay={revealAt.designResources} />
             </div>
             <Footer delay={revealAt.footer} />
           </div>

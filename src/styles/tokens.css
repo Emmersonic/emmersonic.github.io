@@ -26,6 +26,12 @@
   --gold-1: #926f49;
   --gold-hi: #edd7a1;
 
+  /* Link colors (AnimatedLink — base text, hover text, faint rest underline).
+     Every link on the site uses these three. */
+  --link: #8a6642;
+  --link-hover: #a07850;
+  --link-underline: #c4bbb0;
+
   /* Radius */
   --radius-card: 40px;
 
@@ -47,5 +53,6 @@
   /* Decorative gradients */
   --orb-blue: radial-gradient(65.8% 78.7% at 25.5% 21.5%, #38c0ff 0%, #0f8bff 100%);
   --orb-peach: radial-gradient(77.3% 90.4% at 91.1% 64.3%, #ff971747 0%, #ababab00 100%);
+  --orb-peach-left: radial-gradient(20% 88% at -7.8% 69.6%, #ff971747 0%, #ababab00 100%);
   --orb-gold: radial-gradient(77.3% 90.4% at 62.1% 0, #edd7a114 0%, #ababab00 100%);
 }

@@ -1,8 +1,8 @@
 import {
   motion,
+  motionValue,
   useAnimationFrame,
   useInView,
-  useMotionValue,
   useReducedMotion,
   useScroll,
   useTransform,
@@ -23,9 +23,10 @@ import { Text } from '@/components/primitives'
 import { Reveal } from '@/motion/Reveal'
 import { site } from '@/content'
 
-// Lazy: ShapeBlur pulls in three.js (~600 kB min). Splitting it into an async
-// chunk keeps the initial bundle lean; the shapes appear when the chunk lands
-// (they fade up behind a heavy blur, so the late arrival isn't jarring).
+// Lazy: keeps the hero's WebGL code out of the initial bundle (now a small raw-
+// WebGL chunk, not three.js) so it never blocks first paint; the shapes appear
+// when the chunk lands (they fade up behind a heavy blur, so the late arrival
+// isn't jarring).
 const ShapeBlur = lazy(() => import('./ShapeBlur'))
 
 /**
@@ -40,29 +41,46 @@ const ROT_AMP = 8 // deg of rotational sway
 const FLOAT_SPEED = 0.00011 // ms → noise-space; lower = slower, dreamier
 const SCROLL_IDLE_MS = 90 // grace after the last scroll event before float resumes
 
+/** Per-shape noise seed plus the three motion values `BlurShape` reads for its
+ *  ambient wander (horizontal, vertical, rotational). Created once per shape and
+ *  driven by the single shared {@link useFloatDriver} below. */
+interface FloatState {
+  seed: number
+  x: MotionValue<number>
+  y: MotionValue<number>
+  rot: MotionValue<number>
+}
+
 /**
  * Ambient float, gated for scroll performance. The wander amplitude rides a
  * `gain` (0→1) that *eases* to 0 while the user is scrolling and eases back when
  * they stop. Asymmetric rates: drop fast (k≈9, ~110ms), resume gently (k≈4.5,
  * ~220ms). Skipped entirely when the hero is off-screen.
  *
- * `enabled` stays `true` for the lifetime of the shape — the gain mechanism owns
- * the scroll suppression. Keeping the hook running (vs. killing it when atTop
+ * `enabled` stays `true` for the lifetime of the shapes — the gain mechanism owns
+ * the scroll suppression. Keeping the driver running (vs. killing it when atTop
  * flips false) avoids the jank of shapes freezing at a non-zero float offset the
  * moment a scroll starts; they ease smoothly to 0 instead.
+ *
+ * One shared driver for all 4 shapes (previously each `BlurShape` ran its own
+ * `useAnimationFrame` doing this exact computation independently — 4 redundant
+ * `performance.now()` reads + gain-easing calcs per frame, since every shape was
+ * fed the same `reduced`/`scrollAt`/`inView`/`enabled` inputs and only the noise
+ * seed differed). `now`/`idle`/`gain` are computed ONCE per frame here; each
+ * shape's `x`/`y`/`rot` motion values are then written from that single gain,
+ * sampling the shared noise field at the shape's own seed offset — identical
+ * per-shape output to the previous 4-driver version.
  */
-function useFloat(
-  seed: number,
+function useFloatDriver(
+  floatStates: FloatState[],
   reduced: boolean,
   scrollAt: RefObject<number>,
   inView: boolean,
   enabled: boolean,
 ) {
-  const x = useMotionValue(0)
-  const y = useMotionValue(0)
-  const rot = useMotionValue(0)
   const gain = useRef(0)
-  // True once the wander has fully eased to 0 during a scroll — see below.
+  // True once the wander has fully eased to 0 during a scroll — shared across all
+  // shapes since their gain trajectories are identical (same inputs, one clock).
   const frozen = useRef(false)
   useAnimationFrame((_t, delta) => {
     if (!enabled || reduced || !inView) return
@@ -84,20 +102,23 @@ function useFloat(
     // of running 12 noise2D + 12 .set() per frame to produce ~0.
     if (!idle && g < 0.002) {
       if (!frozen.current) {
-        x.set(0)
-        y.set(0)
-        rot.set(0)
+        for (const s of floatStates) {
+          s.x.set(0)
+          s.y.set(0)
+          s.rot.set(0)
+        }
         frozen.current = true
       }
       return
     }
     frozen.current = false
     const n = now * FLOAT_SPEED
-    x.set(noise2D(n, seed) * FLOAT_AMP * g)
-    y.set(noise2D(n, seed + 50) * FLOAT_AMP * g)
-    rot.set(noise2D(n, seed + 100) * ROT_AMP * g)
+    for (const s of floatStates) {
+      s.x.set(noise2D(n, s.seed) * FLOAT_AMP * g)
+      s.y.set(noise2D(n, s.seed + 50) * FLOAT_AMP * g)
+      s.rot.set(noise2D(n, s.seed + 100) * ROT_AMP * g)
+    }
   })
-  return { x, y, rot }
 }
 
 /**
@@ -283,13 +304,9 @@ interface ShapeProps {
   shape: Shape
   progress: MotionValue<number>
   reduced: boolean
-  /** Timestamp of the last scroll event; gates the float (see {@link useFloat}). */
-  scrollAt: RefObject<number>
-  /** False while the hero is off-screen — float work is skipped entirely. */
-  inView: boolean
-  /** Ambient noise wander enabled (true for the lifetime of the shape — the gain
-   *  mechanism handles scroll suppression internally). */
-  float: boolean
+  /** This shape's slice of the shared float driver (see {@link useFloatDriver}) —
+   *  x/y/rot motion values written by the one Hero-level rAF loop. */
+  float: FloatState
   /** Hard-park the WebGL auto-orbit loop (page scrolled off top). */
   paused: boolean
 }
@@ -301,12 +318,12 @@ const floatSeed = (shape: Shape) => shape.left * 0.013 + shape.top * 0.007
  * WebGL ShapeBlur canvas: same position/size/drift as the shape, plus an
  * auto-orbit bloom (virtual cursor sweeps the shapes) and ambient noise float.
  */
-function BlurShape({ shape, progress, reduced, scrollAt, inView, float, paused }: ShapeProps) {
+function BlurShape({ shape, progress, reduced, float, paused }: ShapeProps) {
   const yDrift = useTransform(progress, [0, 1], [0, shape.drift])
-  const { x, y: fy, rot } = useFloat(floatSeed(shape), reduced, scrollAt, inView, float)
   // Float layers on top of scroll drift: combined y = parallax + noise.
-  const y = useTransform([yDrift, fy], ([a, b]: number[]) => a + b)
-  const rotate = useTransform(rot, (v) => shape.rotate + v)
+  const y = useTransform([yDrift, float.y], ([a, b]: number[]) => a + b)
+  const rotate = useTransform(float.rot, (v) => shape.rotate + v)
+  const x = float.x
   // Pad = transparent margin around the shape so the auto-orbit bloom doesn't clip
   // at the canvas edge. Trimmed from 0.6→0.45 (blue 1.0→0.75): the auto-orbit
   // bloom still clears, but each canvas layer is ~25-30% smaller area — less GPU
@@ -371,7 +388,7 @@ export function Hero() {
   // focus. Hidden tabs already throttle rAF to ~0, but an unfocused-but-visible
   // window keeps firing — gate on focus so we don't animate where no one's looking.
   const active = usePageActive()
-  // One passive scroll listener, shared with every shape's float (see useFloat),
+  // One passive scroll listener, shared by every shape's float (see useFloatDriver),
   // so the wander eases off during scroll instead of fighting it each frame.
   const scrollAt = useRef(0)
   // Kill ALL ambient hero animation (simplex float + WebGL auto-orbit) once the
@@ -438,15 +455,24 @@ export function Hero() {
   // Text parallax — independent of the tilt: drifts up, stays flat.
   const textY = useTransform(scrollYProgress, [0, 1], [0, -120])
 
+  // One float state (seed + x/y/rot motion values) per shape, created once and
+  // driven by the single shared useFloatDriver below — see {@link FloatState}.
+  const [floatStates] = useState(() =>
+    shapes.map((s) => ({
+      seed: floatSeed(s),
+      x: motionValue(0),
+      y: motionValue(0),
+      rot: motionValue(0),
+    })),
+  )
+  // float stays true — the scroll-gain mechanism eases shapes smoothly to 0
+  // during scroll rather than freezing them at their current float offset when
+  // atTop flips false.
+  useFloatDriver(floatStates, !!reduced, scrollAt, inView && active, true)
+
   const baseShapeProps = {
     progress: scrollYProgress,
     reduced: !!reduced,
-    scrollAt,
-    inView: inView && active,
-    // float stays true — the scroll-gain mechanism eases shapes smoothly to 0
-    // during scroll rather than freezing them at their current float offset when
-    // atTop flips false.
-    float: true,
   }
 
   return (
@@ -480,11 +506,8 @@ export function Hero() {
           />
           <div
             aria-hidden
-            className="pointer-events-none absolute opacity-[.26]"
-            style={{
-              inset: '-22px -74px 0 -31px',
-              background: 'radial-gradient(20% 88% at -7.8% 69.6%, #ff971747 0%, #ababab00 100%)',
-            }}
+            className="pointer-events-none absolute bg-orb-peach-left opacity-[.26]"
+            style={{ inset: '-22px -74px 0 -31px' }}
           />
           {/* First "Noise" layer: sits *under* the shapes on the live site. */}
           <Grain src={NOISE_IMG} blend="overlay" opacity={0.16} />
@@ -492,7 +515,13 @@ export function Hero() {
               Paint order: blue, green, red blobs, then yellow on top. */}
           <div aria-hidden className="absolute inset-0">
             {shapes.map((s, i) => (
-              <BlurShape key={i} shape={s} {...baseShapeProps} paused={!atTop} />
+              <BlurShape
+                key={i}
+                shape={s}
+                {...baseShapeProps}
+                float={floatStates[i]}
+                paused={!atTop}
+              />
             ))}
           </div>
           {/* CSS grain stack *over* the shapes — mapped 1:1 from the live Framer DOM:

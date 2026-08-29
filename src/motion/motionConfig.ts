@@ -25,7 +25,8 @@ export const revealAt = {
   sidebar: 1.3,
   tools: 1.45,
   sites: 1.6,
-  footer: 1.75,
+  designResources: 1.75,
+  footer: 2.05,
 } as const
 
 /**

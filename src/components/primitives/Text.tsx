@@ -1,9 +1,9 @@
-import type { ElementType, ReactNode } from 'react'
+import type { ElementType, HTMLAttributes, ReactNode } from 'react'
 import { cn } from '@/lib/cn'
 
 export type TextVariant = 'hero' | 'hiya' | 'lead' | 'serif' | 'kicker' | 'ui' | 'meta'
 
-interface TextProps {
+interface TextProps extends HTMLAttributes<HTMLElement> {
   children: ReactNode
   /** Element to render. Defaults to 'p'. */
   as?: ElementType

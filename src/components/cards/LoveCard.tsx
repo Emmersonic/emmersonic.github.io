@@ -50,7 +50,6 @@ export function LoveCard({
           text={ringText}
           radius={98}
           spinDuration={18}
-          onHover="pause"
           className={cn(
             // Bleed off the bottom-right corner; the card's overflow clips it.
             'pointer-events-auto absolute -bottom-24 -right-24 size-[290px] font-mono text-base font-bold uppercase tablet:-bottom-20 tablet:-right-20',

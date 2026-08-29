@@ -1,5 +1,4 @@
 import { useEffect, useRef } from 'react'
-import * as THREE from 'three'
 
 /**
  * ShapeBlur (React Bits) — a WebGL plane that paints one SDF shape (rounded
@@ -7,16 +6,28 @@ import * as THREE from 'three'
  * soft-blurred elsewhere. Adapted from the JS original with two changes for this
  * project: TypeScript types, and a `u_color` uniform so each instance can be
  * tinted (the upstream shader hard-codes white). Experimental hero accent.
+ *
+ * Implemented in raw WebGL (no three.js): the GPU work is one fullscreen quad
+ * + one fragment shader per instance, which doesn't need a scene graph. This
+ * keeps the lazy hero chunk a few kB instead of ~515 kB of three.js.
  */
 
 const vertexShader = /* glsl */ `
+attribute vec2 a_position;
+attribute vec2 a_uv;
 varying vec2 v_texcoord;
 void main() {
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-    v_texcoord = uv;
+    gl_Position = vec4(a_position, 0.0, 1.0);
+    v_texcoord = a_uv;
 }
 `
 
+// Fragment shader body is untouched from the three.js version — it's the visual
+// definition of the blobs (GLSL ES 1.00: `varying`/`uniform`/`gl_FragColor`, no
+// `#version`). three.js used to auto-prepend a `precision` line and, on WebGL1,
+// the derivatives `#extension`; raw WebGL does not, so those are injected at
+// compile time (see `fragSrc` assembly below) — without them the shader fails to
+// compile ("No precision specified for (float)" + dFdx/dFdy not found).
 const fragmentShader = /* glsl */ `
 varying vec2 v_texcoord;
 
@@ -178,6 +189,142 @@ void main() {
 }
 `
 
+/** Fullscreen triangle-strip quad: NDC (x, y) + matching UV (u, v), interleaved.
+ *  UV = (ndc + 1) / 2 on both axes — the same linear NDC↔UV correspondence the
+ *  old three.js OrthographicCamera + PlaneGeometry(1,1) pairing produced (the
+ *  camera bounds exactly matched the scaled plane, so it degenerated to this). */
+const QUAD_VERTS = new Float32Array([
+  // x,  y,  u, v
+  -1, -1, 0, 0,
+  1, -1, 1, 0,
+  -1, 1, 0, 1,
+  1, 1, 1, 1,
+])
+
+type GL = WebGLRenderingContext | WebGL2RenderingContext
+
+function compileShader(gl: GL, type: number, source: string): WebGLShader {
+  const shader = gl.createShader(type)
+  if (!shader) throw new Error('ShapeBlur: failed to create shader')
+  gl.shaderSource(shader, source)
+  gl.compileShader(shader)
+  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+    const info = gl.getShaderInfoLog(shader)
+    gl.deleteShader(shader)
+    throw new Error(`ShapeBlur: shader compile error: ${info ?? 'unknown'}`)
+  }
+  return shader
+}
+
+function createProgram(gl: GL, vertSrc: string, fragSrc: string): WebGLProgram {
+  const vs = compileShader(gl, gl.VERTEX_SHADER, vertSrc)
+  const fs = compileShader(gl, gl.FRAGMENT_SHADER, fragSrc)
+  const program = gl.createProgram()
+  if (!program) throw new Error('ShapeBlur: failed to create program')
+  gl.attachShader(program, vs)
+  gl.attachShader(program, fs)
+  gl.linkProgram(program)
+  // Once attached + linked, the program keeps the shaders alive by refcount —
+  // safe to flag them for deletion now instead of holding handles for teardown.
+  gl.deleteShader(vs)
+  gl.deleteShader(fs)
+  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+    const info = gl.getProgramInfoLog(program)
+    gl.deleteProgram(program)
+    throw new Error(`ShapeBlur: program link error: ${info ?? 'unknown'}`)
+  }
+  return program
+}
+
+interface Uniforms {
+  u_mouse: WebGLUniformLocation | null
+  u_resolution: WebGLUniformLocation | null
+  u_pixelRatio: WebGLUniformLocation | null
+  u_color: WebGLUniformLocation | null
+  u_color2: WebGLUniformLocation | null
+  u_baseBlur: WebGLUniformLocation | null
+  u_shapeSize: WebGLUniformLocation | null
+  u_roundness: WebGLUniformLocation | null
+  u_borderSize: WebGLUniformLocation | null
+  u_circleSize: WebGLUniformLocation | null
+  u_circleEdge: WebGLUniformLocation | null
+  u_grainAmount: WebGLUniformLocation | null
+  u_grainScale: WebGLUniformLocation | null
+}
+
+function getUniforms(gl: GL, program: WebGLProgram): Uniforms {
+  const g = (name: string) => gl.getUniformLocation(program, name)
+  return {
+    u_mouse: g('u_mouse'),
+    u_resolution: g('u_resolution'),
+    u_pixelRatio: g('u_pixelRatio'),
+    u_color: g('u_color'),
+    u_color2: g('u_color2'),
+    u_baseBlur: g('u_baseBlur'),
+    u_shapeSize: g('u_shapeSize'),
+    u_roundness: g('u_roundness'),
+    u_borderSize: g('u_borderSize'),
+    u_circleSize: g('u_circleSize'),
+    u_circleEdge: g('u_circleEdge'),
+    u_grainAmount: g('u_grainAmount'),
+    u_grainScale: g('u_grainScale'),
+  }
+}
+
+// A shape's own variation may dead-code-eliminate uniforms used only in other
+// VAR branches (e.g. u_borderSize is only read when VAR == 0) — the driver is
+// free to optimize the uniform away entirely, same as it could under three.js.
+// three.js's uniform system already no-ops silently in that case; these small
+// setters replicate that instead of throwing on a null location.
+function setU1f(gl: GL, loc: WebGLUniformLocation | null, v: number) {
+  if (loc) gl.uniform1f(loc, v)
+}
+function setU2f(gl: GL, loc: WebGLUniformLocation | null, a: number, b: number) {
+  if (loc) gl.uniform2f(loc, a, b)
+}
+function setU3f(gl: GL, loc: WebGLUniformLocation | null, a: number, b: number, c: number) {
+  if (loc) gl.uniform3f(loc, a, b, c)
+}
+
+/** b + (a - b) * exp(-lambda * dt) — inlined from three.js's MathUtils.damp. */
+function damp(a: number, b: number, lambda: number, dt: number): number {
+  return b + (a - b) * Math.exp(-lambda * dt)
+}
+
+// Reused 1×1 canvas: the browser's own CSS color parser is the most robust way
+// to turn any resolveColor() output (hex, rgb()/rgba(), named colors, ...) into
+// concrete sRGB bytes, matching exactly what the browser considers the color.
+let colorCtx: CanvasRenderingContext2D | null | undefined
+function parseCssColorBytes(css: string): [number, number, number] {
+  if (colorCtx === undefined) {
+    const c = document.createElement('canvas')
+    c.width = 1
+    c.height = 1
+    colorCtx = c.getContext('2d', { willReadFrequently: true })
+  }
+  if (!colorCtx) return [255, 255, 255]
+  colorCtx.fillStyle = '#000'
+  colorCtx.fillStyle = css
+  colorCtx.fillRect(0, 0, 1, 1)
+  const [r, g, b] = colorCtx.getImageData(0, 0, 1, 1).data
+  return [r, g, b]
+}
+
+// three.js's `Color` linearizes sRGB input by default (ColorManagement is on
+// in modern three): hex/rgb() strings are decoded sRGB → linear before landing
+// in the uniform. This custom fragment shader never re-encodes on the way out
+// (no colorspace_fragment chunk — that's only injected into three's built-in
+// materials), so the *linear* values are what actually hit the framebuffer.
+// Replicate the decode (three's SRGBToLinear) or the tint shifts visibly darker.
+function srgbToLinear(c: number): number {
+  return c < 0.04045 ? c * 0.0773993808 : Math.pow(c * 0.9478672986 + 0.0521327014, 2.4)
+}
+
+function parseColor(css: string): { r: number; g: number; b: number } {
+  const [r, g, b] = parseCssColorBytes(css)
+  return { r: srgbToLinear(r / 255), g: srgbToLinear(g / 255), b: srgbToLinear(b / 255) }
+}
+
 /**
  * Shared event fan-out: four ShapeBlur instances each need pointermove/scroll/
  * resize, but four document/window listeners doing identical work is waste.
@@ -252,6 +399,25 @@ interface ShapeBlurProps {
   paused?: boolean
 }
 
+/** Live uniform state + a redraw fn — the raw-WebGL analogue of the old
+ *  `THREE.ShaderMaterial` handle: the sync effect mutates this object directly
+ *  and calls `draw()`, no context teardown/rebuild involved. */
+interface GLHandle {
+  uniformState: {
+    color: { r: number; g: number; b: number }
+    color2: { r: number; g: number; b: number }
+    baseBlur: number
+    shapeSize: number
+    roundness: number
+    borderSize: number
+    circleSize: number
+    circleEdge: number
+    grainAmount: number
+    grainScale: number
+  }
+  draw: () => void
+}
+
 export default function ShapeBlur({
   className = '',
   variation = 0,
@@ -306,7 +472,7 @@ export default function ShapeBlur({
   useEffect(() => {
     uniformPropsRef.current = uniformProps
   })
-  const materialRef = useRef<THREE.ShaderMaterial | null>(null)
+  const glHandleRef = useRef<GLHandle | null>(null)
   const redrawRef = useRef<() => void>(() => {})
 
   useEffect(() => {
@@ -333,48 +499,108 @@ export default function ShapeBlur({
     // to halve GPU/fill-rate cost — the heavy blur hides the lower cadence.
     const AUTO_FRAME_S = 1 / 30
 
-    const vMouse = new THREE.Vector2()
-    const vMouseDamp = new THREE.Vector2()
-    const vResolution = new THREE.Vector2()
+    const vMouse = { x: 0, y: 0 }
+    const vMouseDamp = { x: 0, y: 0 }
+    // u_resolution value: w,h * dpr (unfloored — matches the old
+    // `vResolution.set(w, h).multiplyScalar(dpr)`, distinct from the floored
+    // canvas.width/height drawing-buffer size below).
+    let resW = 0,
+      resH = 0
 
     let w = 1,
       h = 1
+    let dpr = pixelRatioProp
 
-    const scene = new THREE.Scene()
-    const camera = new THREE.OrthographicCamera()
-    camera.position.z = 1
+    const canvas = document.createElement('canvas')
+    mount.appendChild(canvas)
 
-    const renderer = new THREE.WebGLRenderer({ alpha: true })
-    renderer.setClearColor(0x000000, 0)
-    mount.appendChild(renderer.domElement)
+    // Use WebGL1. The fragment shader is GLSL ES 1.00 and uses dFdx/dFdy
+    // (aastep/strokeAA). On WebGL1 those come from the OES_standard_derivatives
+    // extension — near-universally supported — enabled at runtime + via the
+    // `#extension` pragma below. A WebGL2 context does NOT work here: it refuses
+    // to expose OES_standard_derivatives (returns null) yet an ES 1.00 shader
+    // under WebGL2 still doesn't get the derivative funcs as core, so dFdx fails
+    // to compile ("no matching overloaded function found"). Matching ES 3.00
+    // would mean rewriting the shader (in/out, #version 300 es) — not worth it
+    // for one fullscreen quad, where WebGL1 perf is identical.
+    const contextAttribs: WebGLContextAttributes = { alpha: true, antialias: false }
+    const gl = canvas.getContext('webgl', contextAttribs) as WebGLRenderingContext | null
+    if (!gl) {
+      // No WebGL support at all — bail out quietly, nothing to tear down beyond the canvas.
+      return () => {
+        if (mount.contains(canvas)) mount.removeChild(canvas)
+      }
+    }
+    gl.getExtension('OES_standard_derivatives')
 
-    const geo = new THREE.PlaneGeometry(1, 1)
+    // Prelude three.js used to inject automatically and this raw port must supply:
+    //  1. `#extension` — MUST precede any non-preprocessor token.
+    //  2. `precision` — GLSL ES 1.00 fragment shaders have NO default float
+    //     precision, so it must be declared or every `float` fails to compile.
+    //     three.js's default renderer uses highp; match it.
+    const derivativesPragma = '#extension GL_OES_standard_derivatives : enable\n'
+    const precisionPrelude = 'precision highp float;\nprecision highp int;\n'
+    const fragSrc = derivativesPragma + precisionPrelude + `#define VAR ${variation}\n` + fragmentShader
+    const program = createProgram(gl, vertexShader, fragSrc)
+    const u = getUniforms(gl, program)
+
+    const vbo = gl.createBuffer()
+    gl.bindBuffer(gl.ARRAY_BUFFER, vbo)
+    gl.bufferData(gl.ARRAY_BUFFER, QUAD_VERTS, gl.STATIC_DRAW)
+    const a_position = gl.getAttribLocation(program, 'a_position')
+    const a_uv = gl.getAttribLocation(program, 'a_uv')
+
+    // One-time GL state: this context is dedicated to this single instance (one
+    // quad, one draw call), so blend mode / clear color never change between
+    // frames. Blend func matches three.js's default NormalBlending (separate
+    // alpha factors — correct premultiplied compositing against premultipliedAlpha
+    // canvas contexts, which is also the WebGL default this project relies on).
+    gl.enable(gl.BLEND)
+    gl.blendEquationSeparate(gl.FUNC_ADD, gl.FUNC_ADD)
+    gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
+    gl.clearColor(0, 0, 0, 0)
+
     const up = uniformPropsRef.current
-    const material = new THREE.ShaderMaterial({
-      vertexShader,
-      fragmentShader,
-      uniforms: {
-        u_mouse: { value: vMouseDamp },
-        u_resolution: { value: vResolution },
-        u_pixelRatio: { value: pixelRatioProp },
-        u_color: { value: new THREE.Color(resolveColor(up.color, mount)) },
-        u_color2: { value: new THREE.Color(resolveColor(up.color2 || up.color, mount)) },
-        u_baseBlur: { value: up.baseBlur },
-        u_shapeSize: { value: up.shapeSize },
-        u_roundness: { value: up.roundness },
-        u_borderSize: { value: up.borderSize },
-        u_circleSize: { value: up.circleSize },
-        u_circleEdge: { value: up.circleEdge },
-        u_grainAmount: { value: up.grainAmount },
-        u_grainScale: { value: up.grainScale },
-      },
-      defines: { VAR: variation },
-      transparent: true,
-    })
-    materialRef.current = material
+    const uniformState: GLHandle['uniformState'] = {
+      color: parseColor(resolveColor(up.color, mount)),
+      color2: parseColor(resolveColor(up.color2 || up.color, mount)),
+      baseBlur: up.baseBlur,
+      shapeSize: up.shapeSize,
+      roundness: up.roundness,
+      borderSize: up.borderSize,
+      circleSize: up.circleSize,
+      circleEdge: up.circleEdge,
+      grainAmount: up.grainAmount,
+      grainScale: up.grainScale,
+    }
 
-    const quad = new THREE.Mesh(geo, material)
-    scene.add(quad)
+    const draw = () => {
+      gl.useProgram(program)
+      gl.bindBuffer(gl.ARRAY_BUFFER, vbo)
+      gl.enableVertexAttribArray(a_position)
+      gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 16, 0)
+      gl.enableVertexAttribArray(a_uv)
+      gl.vertexAttribPointer(a_uv, 2, gl.FLOAT, false, 16, 8)
+
+      setU2f(gl, u.u_mouse, vMouseDamp.x, vMouseDamp.y)
+      setU2f(gl, u.u_resolution, resW, resH)
+      setU1f(gl, u.u_pixelRatio, dpr)
+      setU3f(gl, u.u_color, uniformState.color.r, uniformState.color.g, uniformState.color.b)
+      setU3f(gl, u.u_color2, uniformState.color2.r, uniformState.color2.g, uniformState.color2.b)
+      setU1f(gl, u.u_baseBlur, uniformState.baseBlur)
+      setU1f(gl, u.u_shapeSize, uniformState.shapeSize)
+      setU1f(gl, u.u_roundness, uniformState.roundness)
+      setU1f(gl, u.u_borderSize, uniformState.borderSize)
+      setU1f(gl, u.u_circleSize, uniformState.circleSize)
+      setU1f(gl, u.u_circleEdge, uniformState.circleEdge)
+      setU1f(gl, u.u_grainAmount, uniformState.grainAmount)
+      setU1f(gl, u.u_grainScale, uniformState.grainScale)
+
+      gl.clear(gl.COLOR_BUFFER_BIT)
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
+    }
+
+    glHandleRef.current = { uniformState, draw }
 
     // Pointer position is read against a cached rect so a global pointermove
     // (one per instance) never forces a layout. Refreshed on resize + scroll.
@@ -453,14 +679,14 @@ export default function ShapeBlur({
         const th = phase
         const px = autoShape === 'figure8' ? cx + rx * Math.sin(th) : cx + rx * Math.cos(th)
         const py = autoShape === 'figure8' ? cy + ry * Math.sin(2 * th) : cy + ry * Math.sin(th)
-        vMouse.set(px - mount.offsetLeft, py - mount.offsetTop)
+        vMouse.x = px - mount.offsetLeft
+        vMouse.y = py - mount.offsetTop
       }
 
-      ;(['x', 'y'] as const).forEach((k) => {
-        vMouseDamp[k] = THREE.MathUtils.damp(vMouseDamp[k], vMouse[k], 8, dt)
-      })
+      vMouseDamp.x = damp(vMouseDamp.x, vMouse.x, 8, dt)
+      vMouseDamp.y = damp(vMouseDamp.y, vMouse.y, 8, dt)
 
-      renderer.render(scene, camera)
+      draw()
 
       // Auto mode never settles — the target path keeps moving — so the loop
       // runs continuously while visible (parks only when scrolled off-screen).
@@ -481,12 +707,13 @@ export default function ShapeBlur({
     // this effect (which would rebuild the WebGL context). Same for redraw, which
     // the uniform-sync effect uses to repaint a parked static shape.
     startRef.current = start
-    redrawRef.current = () => renderer.render(scene, camera)
+    redrawRef.current = () => draw()
 
     const onPointerMove = (e: Event) => {
       const pe = e as PointerEvent
       if (!visible || reduced || performance.now() - lastScrollAt < SCROLL_IDLE_MS) return
-      vMouse.set(pe.clientX - rect.left, pe.clientY - rect.top)
+      vMouse.x = pe.clientX - rect.left
+      vMouse.y = pe.clientY - rect.top
       start()
     }
 
@@ -497,22 +724,18 @@ export default function ShapeBlur({
       if (!active) return
       w = mount.clientWidth
       h = mount.clientHeight
-      const dpr = Math.min(window.devicePixelRatio, pixelRatioProp)
+      dpr = Math.min(window.devicePixelRatio, pixelRatioProp)
 
-      renderer.setSize(w, h)
-      renderer.setPixelRatio(dpr)
+      canvas.style.width = `${w}px`
+      canvas.style.height = `${h}px`
+      canvas.width = Math.floor(w * dpr)
+      canvas.height = Math.floor(h * dpr)
+      gl.viewport(0, 0, canvas.width, canvas.height)
 
-      camera.left = -w / 2
-      camera.right = w / 2
-      camera.top = h / 2
-      camera.bottom = -h / 2
-      camera.updateProjectionMatrix()
-
-      quad.scale.set(w, h, 1)
-      vResolution.set(w, h).multiplyScalar(dpr)
-      material.uniforms.u_pixelRatio.value = dpr
+      resW = w * dpr
+      resH = h * dpr
       updateRect()
-      renderer.render(scene, camera) // repaint the static shape at the new size
+      draw() // repaint the static shape at the new size
     }
 
     resize()
@@ -549,15 +772,14 @@ export default function ShapeBlur({
       unsubPointer()
       ro.disconnect()
       io.disconnect()
-      materialRef.current = null
+      glHandleRef.current = null
       redrawRef.current = () => {}
-      if (mount.contains(renderer.domElement)) {
-        mount.removeChild(renderer.domElement)
+      if (mount.contains(canvas)) {
+        mount.removeChild(canvas)
       }
-      geo.dispose()
-      material.dispose()
-      renderer.dispose()
-      renderer.forceContextLoss()
+      gl.deleteBuffer(vbo)
+      gl.deleteProgram(program)
+      gl.getExtension('WEBGL_lose_context')?.loseContext()
     }
   }, [
     variation,
@@ -576,20 +798,20 @@ export default function ShapeBlur({
   // repaint — no context teardown. (The main effect re-reads these via
   // uniformPropsRef when it does rebuild, so the two paths can't disagree.)
   useEffect(() => {
-    const material = materialRef.current
+    const handle = glHandleRef.current
     const mount = mountRef.current
-    if (!material || !mount) return
-    const u = material.uniforms
-    u.u_color.value.set(resolveColor(color, mount))
-    u.u_color2.value.set(resolveColor(color2 || color, mount))
-    u.u_baseBlur.value = baseBlur
-    u.u_shapeSize.value = shapeSize
-    u.u_roundness.value = roundness
-    u.u_borderSize.value = borderSize
-    u.u_circleSize.value = circleSize
-    u.u_circleEdge.value = circleEdge
-    u.u_grainAmount.value = grainAmount
-    u.u_grainScale.value = grainScale
+    if (!handle || !mount) return
+    const s = handle.uniformState
+    s.color = parseColor(resolveColor(color, mount))
+    s.color2 = parseColor(resolveColor(color2 || color, mount))
+    s.baseBlur = baseBlur
+    s.shapeSize = shapeSize
+    s.roundness = roundness
+    s.borderSize = borderSize
+    s.circleSize = circleSize
+    s.circleEdge = circleEdge
+    s.grainAmount = grainAmount
+    s.grainScale = grainScale
     redrawRef.current()
   }, [
     color,

@@ -18,8 +18,8 @@ export function AnimatedLink({
   external = true,
   className,
   // Consumed so they don't conflict with the sweep handlers below.
-  onMouseEnter: _ome,
-  onMouseLeave: _oml,
+  onMouseEnter,
+  onMouseLeave,
   ...rest
 }: AnimatedLinkProps) {
   const sweepRef = useRef<HTMLSpanElement>(null)
@@ -51,7 +51,7 @@ export function AnimatedLink({
       onMouseLeave={handleLeave}
       className={cn(
         'group relative inline-block font-body text-ui font-medium',
-        'text-[#8a6642] hover:text-[#a07850] [transition:color_350ms_cubic-bezier(0.44,0,0.56,1)]',
+        'text-link hover:text-link-hover [transition:color_350ms_cubic-bezier(0.44,0,0.56,1)]',
         className
       )}
       {...rest}
@@ -60,13 +60,13 @@ export function AnimatedLink({
       {/* Faint dotted underline — always visible at rest */}
       <span
         aria-hidden
-        className="pointer-events-none absolute bottom-0 left-0 h-0 w-full border-b-2 border-dotted border-[#c4bbb0]"
+        className="pointer-events-none absolute bottom-0 left-0 h-0 w-full border-b-2 border-dotted border-link-underline"
       />
       {/* Active sweep — JS controls clip-path for asymmetric in/out directions */}
       <span
         ref={sweepRef}
         aria-hidden
-        className="pointer-events-none absolute bottom-0 left-0 h-0 w-full border-b-2 border-dotted border-[#8a6642] [clip-path:inset(0_100%_0_0)]"
+        className="pointer-events-none absolute bottom-0 left-0 h-0 w-full border-b-2 border-dotted border-link [clip-path:inset(0_100%_0_0)]"
       />
     </a>
   )

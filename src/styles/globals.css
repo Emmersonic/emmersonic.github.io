@@ -36,6 +36,25 @@
 }
 
 
+@layer utilities {
+  /* Compositor-only spin for CircularText — see src/motion/CircularText.tsx.
+     Duration comes from the --spin-duration custom property set inline per
+     instance; direction/period must match the ring text's letter spacing. */
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .animate-circular-spin {
+    animation: spin var(--spin-duration, 20s) linear infinite;
+  }
+
+  .animate-circular-spin:hover {
+    animation-play-state: paused;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
