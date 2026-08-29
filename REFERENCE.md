@@ -1,7 +1,7 @@
 # emmersonic.com — extracted ground truth (desktop 1440)
 
 Measured from the live site's own DOM/computed styles (served locally as `public/reference.html`).
-This supersedes IMPLEMENTATION.md's invented type scale where they disagree. **Reproduce, don't reimagine.**
+This supersedes .plans/IMPLEMENTATION.md's invented type scale where they disagree. **Reproduce, don't reimagine.**
 
 ## Layout — asymmetric 2-column collage (NOT a vertical stack)
 - Page bg: `#f7f4f1` (paper-1). Content frame centered, ~1020px wide (≈210px side margins at 1440).
@@ -49,7 +49,7 @@ This supersedes IMPLEMENTATION.md's invented type scale where they disagree. **R
 ## Footer
 - New Spirit Regular 20px / lh30 `#1f1f1f`, centered: "Still here? Get in touch, tayloremmerson@me.com".
 
-## Copy corrections vs IMPLEMENTATION.md §8
+## Copy corrections vs .plans/IMPLEMENTATION.md §8
 - Intro (hero 56px): "I'm Taylor, a product designer and systems thinker — currently making at Homebase in Toronto" (no trailing period).
 - About = **3 paragraphs** (career[]):
   1. "My career journey so far has been a balance between **building and scaling design systems** and **shipping product work**."
