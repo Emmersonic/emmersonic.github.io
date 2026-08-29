@@ -4,7 +4,7 @@
 
 @layer base {
   html {
-    background-color: var(--paper-0);
+    background-color: var(--paper-1);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
@@ -12,7 +12,7 @@
   }
 
   body {
-    background-color: var(--paper-0);
+    background-color: var(--paper-1);
     color: var(--ink);
     font-family: var(--font-body);
     font-synthesis: none;
