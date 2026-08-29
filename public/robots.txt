@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+# Ground-truth capture of the old Framer site, kept for visual parity checks.
+# Reachable, but not a page we want in the index.
+Disallow: /reference.html
+
+Sitemap: https://emmersonic.com/sitemap.xml
