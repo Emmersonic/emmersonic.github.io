@@ -31,8 +31,6 @@ jobs:
 
       - run: npm run build
 
-      - run: rm -f dist/assets/NewSpirit-*.woff2
-
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
