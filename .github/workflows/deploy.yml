@@ -22,6 +22,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/checkout@v4
+        with:
+          repository: Emmersonic/portfolio-licensed-assets
+          token: ${{ secrets.LICENSED_ASSETS_PAT }}
+          path: .licensed-assets
+
+      - run: |
+          mkdir -p src/assets/fonts
+          cp .licensed-assets/fonts/NewSpirit-Regular.woff2 src/assets/fonts/
+          cp .licensed-assets/fonts/NewSpirit-Medium.woff2 src/assets/fonts/
+          rm -rf .licensed-assets
+
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
