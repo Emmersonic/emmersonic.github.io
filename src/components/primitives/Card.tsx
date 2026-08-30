@@ -24,7 +24,13 @@ interface CardProps {
  */
 export function Card({ children, tone = 'paper', className }: CardProps) {
   return (
-    <div className={cn('rounded-card p-8 tablet:p-11', toneClasses[tone], className)}>
+    <div
+      className={cn(
+        'rounded-card [corner-shape:squircle] p-8 tablet:p-11',
+        toneClasses[tone],
+        className
+      )}
+    >
       {children}
     </div>
   )

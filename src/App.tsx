@@ -29,7 +29,7 @@ export default function App() {
       {/* Outer frame ~1360 wide (live: 1400 page frame, 20px Header padding).
           No top padding — the hero panel meets the viewport top (top:0) as on
           the live site; only the sides and bottom are inset. */}
-      <div className="mx-auto w-full max-w-[1400px] px-5 pb-6 tablet:pb-10">
+      <div className="mx-auto w-full max-w-[1400px] px-3 pb-6 tablet:px-5 tablet:pb-10">
         {/* Hero spans the full frame; its headline/cards live in a narrower column.
             z-10 so the right sidebar (z-0) scrolls *under* the hero background while
             the left card column (z-20) still overlaps on top. */}

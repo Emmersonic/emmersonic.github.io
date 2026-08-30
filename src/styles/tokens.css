@@ -33,7 +33,7 @@
   --link-underline: #c4bbb0;
 
   /* Radius */
-  --radius-card: 40px;
+  --radius-card: 80px;
 
   /* Motion */
   --ease-standard: cubic-bezier(0.44, 0, 0.56, 1);
