@@ -495,7 +495,7 @@ export function Hero() {
               }
         }
       >
-        <div className="relative h-[560px] overflow-hidden rounded-b-[48px] bg-paper-2 tablet:h-[680px]">
+        <div className="relative h-[640px] overflow-hidden rounded-b-[48px] bg-paper-2 tablet:h-[680px]">
           {/* Warm radial sheens: Highlight (gold, top) + two Lowlights (peach,
               lower-right and lower-left) — the live site has both sides. */}
           <div aria-hidden className="pointer-events-none absolute inset-0 bg-orb-gold" />

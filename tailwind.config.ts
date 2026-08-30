@@ -50,9 +50,17 @@ export default {
       fontSize: {
         // Real scale measured from the live site (New Spirit / Inter).
         // Live: 56px / line-height 1.0em / no letter-spacing (white over blobs).
-        hero: ['clamp(34px, 5.6vw, 56px)', { lineHeight: '1' }],
-        // Live measures New Spirit Medium 28px / lh 1.4em; rendered at 30px here.
-        hiya: ['30px', { lineHeight: '1.4' }],
+        // Fluid 320→800px viewport (old clamp pinned flat 34px across every
+        // phone width — no scaling between an iPhone SE and a tablet); lands
+        // on the measured 56px by ~800px so tablet+ matches desktop exactly.
+        // lineHeight 1.05 on mobile (tight-1.0 collides on wrapped 2-3 line
+        // headlines at small sizes); `tablet:leading-none` restores the
+        // measured 1.0 once the size itself has reached full scale.
+        hero: ['clamp(30px, calc(5.4vw + 12.7px), 56px)', { lineHeight: '1.05' }],
+        // Live measures New Spirit Medium 28px / lh 1.4em; was a flat 30px
+        // with zero mobile scaling. Same 320→800px fluid zone as `hero` so
+        // the greeting and headline scale in lockstep.
+        hiya: ['clamp(22px, calc(1.7vw + 16.6px), 30px)', { lineHeight: '1.4' }],
         lead: ['22px', { lineHeight: '1.5' }],
         serif: ['18px', { lineHeight: '1.6' }],
         // Live measures Inter 12px / lh 24px / ls 1.2px; rendered at 14px here (kickers + love-card labels).

@@ -17,7 +17,7 @@ interface TextProps extends HTMLAttributes<HTMLElement> {
  * can be overridden via `className` (e.g. white text on the dark/gold cards).
  */
 const variantClasses: Record<TextVariant, string> = {
-  hero: 'font-display text-hero font-normal text-ink-strong', // 56px serif hero statement
+  hero: 'font-display text-hero font-normal text-ink-strong tablet:leading-none', // 56px serif hero statement, lh1 once full-scale
   hiya: 'font-display text-hiya font-medium', // 28px serif greeting
   lead: 'font-display text-lead font-normal text-ink-strong', // 20px serif lead / footer
   serif: 'font-display text-serif font-normal text-ink-strong', // 16px serif body
