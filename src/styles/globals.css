@@ -34,6 +34,16 @@
     outline-offset: 3px;
     border-radius: 4px;
   }
+
+  /* Safari has no corner-shape:squircle. --radius-card is doubled to fake
+     the squircle's tighter apparent curve; without squircle support that
+     doubled value renders as a huge plain round-rect, so halve it back down
+     for a normal-looking rounded corner on Safari. */
+  @supports not (corner-shape: squircle) {
+    :root {
+      --radius-card: 40px;
+    }
+  }
 }
 
 
