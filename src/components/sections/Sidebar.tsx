@@ -27,7 +27,7 @@ function Block({ label, children }: BlockProps) {
  */
 export function Sidebar() {
   return (
-    <aside className="relative z-0 space-y-10 pr-12 desktop:pt-[122px]">
+    <aside className="relative z-0 space-y-10 px-8 tablet:px-12 desktop:px-0 desktop:pr-12 desktop:pt-[122px]">
       <Reveal delay={revealAt.sidebar + 0 * staggerStep}>
         <Block label="Work">
           <div className="space-y-2">

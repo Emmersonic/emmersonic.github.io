@@ -1,3 +1,4 @@
+import { BottomGlow } from './BottomGlow'
 import { TopBlur } from './TopBlur'
 
 interface PageShellProps {
@@ -11,7 +12,7 @@ interface PageShellProps {
  */
 export function PageShell({ children }: PageShellProps) {
   return (
-    <div className="min-h-screen overflow-x-clip [overflow-y:clip] bg-paper-1 text-ink">
+    <div className="isolate min-h-screen overflow-x-clip [overflow-y:clip] bg-paper-1 text-ink">
       {/*
         iOS 26 Safari ("Liquid Glass") tints the top/bottom toolbar chrome by
         scanning for a fixed/sticky element that hugs the viewport edge
@@ -26,6 +27,7 @@ export function PageShell({ children }: PageShellProps) {
         visible on screen. See https://jahir.dev/blog/safari-toolbar.
       */}
       <div aria-hidden className="pointer-events-none fixed inset-x-0 top-0 z-0 h-1.5 bg-paper-1" />
+      <BottomGlow />
       {children}
       <TopBlur />
     </div>

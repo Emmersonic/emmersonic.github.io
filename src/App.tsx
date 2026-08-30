@@ -38,7 +38,7 @@ export default function App() {
         {/* Centered 1020 column, pulled up to overlap the bottom of the hero panel.
             Desktop overlap is tuned so the first card clears the headline by the
             live site's ~100px (card top ≈ 597 against a 680-tall panel). */}
-        <main className="relative mx-auto max-w-[1100px] -mt-24 grid grid-cols-1 gap-8 tablet:-mt-40 desktop:-mt-[83px] desktop:grid-cols-[minmax(0,1fr)_340px] desktop:gap-[60px]">
+        <main className="relative mx-auto max-w-[1100px] -mt-24 grid grid-cols-1 tablet:-mt-40 desktop:-mt-[83px] desktop:grid-cols-[minmax(0,1fr)_340px] desktop:gap-x-[60px]">
           <div className="relative z-20 space-y-6 tablet:space-y-8">
             <About delay={revealAt.about} />
             <KnownFor delay={revealAt.knownFor} />
@@ -48,11 +48,19 @@ export default function App() {
               <SitesILove delay={revealAt.sites} />
               {/* <DSSection delay={revealAt.designResources} /> */}
             </div>
-            <Footer delay={revealAt.footer} />
           </div>
-          <motion.div style={{ y: sidebarY }}>
+          {/* DOM order (content, sidebar, footer) drives both layouts: stacked
+              top-to-bottom on mobile/tablet (grid-cols-1), and grid
+              auto-placement fills col1/row1, col2/row1, col1/row2 on desktop —
+              same visual result as before without needing explicit order.
+              Explicit margins (not a uniform grid `gap`) so the mobile gap
+              above the sidebar and below it can differ. */}
+          <motion.div className="mt-4 tablet:mt-6 desktop:mt-0" style={{ y: sidebarY }}>
             <Sidebar />
           </motion.div>
+          <div className="mt-20 tablet:mt-24 desktop:mt-8">
+            <Footer delay={revealAt.footer} />
+          </div>
         </main>
       </div>
     </PageShell>
